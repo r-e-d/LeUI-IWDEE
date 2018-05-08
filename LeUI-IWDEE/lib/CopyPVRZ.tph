@@ -1,0 +1,168 @@
+/*******************************************************************************
+ * Utilities from EEUITweaks written by AncientCowboy
+ ******************************************************************************/
+
+/*******************************************************************************
+ * CopyPVRZResource
+ * Copies a V2 BAM or MOS file and its associated PVRZ files to 
+ * override and dynamically fixes the PVRZ indicies. Optionally
+ * allows renaming the V2 BAM/MOS file.
+ * 
+ * This is to be used when one V2 BAM/MOS references one or more PVRZ files.
+ *
+ * Inputs:
+ * 	source_folder
+ *		Folder containing the resource and pvrz files. Default is %MOD_FOLDER%/copy
+ * 	resource_file
+ *		Simple name of the BAM/MOS file. No default - required
+ *  resource_rename
+ *		Optional simple new name of override copy of resource_file. Default is ~~
+ *		(no rename - use original resource_file name)
+ * 	pvrz_files
+ *		Space/tab separated list of pvrz file names matching case insensitive regex:
+ * 		~MOS[0-9]+\.PVRZ~ . No default - required
+ *
+ * Return:
+ *	succeeded
+ *		1 => success, 0 => failure
+ *
+ * Logs:
+ *	Failure descriptions
+ ******************************************************************************/
+DEFINE_ACTION_FUNCTION CopyPVRZResource
+	STR_VAR
+		source_folder = EVAL ~%MOD_FOLDER%/copy~
+		resouce_file = ~~
+		resource_rename = ~~
+		pvrz_files = ~~
+	RET
+		succeeded
+BEGIN
+	OUTER_SET succeeded = 0
+	OUTER_SET continue = 1
+	ACTION_TRY
+		ACTION_IF (~%resource_rename%~ STRING_EQUAL ~~) THEN
+		BEGIN
+			COPY ~%source_folder%/%resource_file%~ ~override~
+				LPF UPDATE_PVRZ_INDICES 
+					RET original_base_index new_base_index index_range
+				END
+		END ELSE
+		BEGIN
+			COPY ~%source_folder%/%resource_file%~ ~override/%resource_rename%~
+				LPF UPDATE_PVRZ_INDICES 
+					RET original_base_index new_base_index index_range
+				END
+		END
+	WITH
+	DEFAULT
+		LOG ~In CopyPVRZResource failed to copy and re-index %source_folder%/%resource_file%~
+		OUTER_SET continue = 0
+	END
+
+	LOG ~original_base_index = %original_base_index%, new_base_index = %new_base_index%, index_range = %index_range%~
+	ACTION_IF (original_base_index >= 0 && new_base_index >= 0 && index_range > 0) THEN
+	BEGIN
+		OUTER_PATCH ~%pvrz_files%~
+		BEGIN
+			REPLACE_EVALUATE ~[%TAB% ]*\([Mm][Oo][Ss][0-9]+\.[Pp][Vv][Rr][Zz]\)~
+			BEGIN
+				PATCH_IF (continue = 1) THEN
+				BEGIN
+					INNER_ACTION
+					BEGIN
+		      			LAF INSTALL_PVRZ
+		      				INT_VAR original_base_index new_base_index
+		      				STR_VAR source_file = EVAL ~%source_folder%/%MATCH1%~
+		      				RET continue = success
+		      			END
+		      			ACTION_IF (continue = 1) THEN
+		      			BEGIN
+		      				OUTER_SET original_base_index += 1
+		      				OUTER_SET new_base_index += 1
+		      				OUTER_SET index_range -= 1
+		      			END
+		      			ELSE BEGIN
+		      				LOG ~In CopyPVRZResource INSTALL_PVRZ failed for %source_folder%/%MATCH1%~
+		      			END
+		      		END
+				END
+			END
+			~~
+		END
+	END 
+	ELSE BEGIN
+		LOG ~In CopyPVRZResource UPDATE_PVRZ_INDICES failed to find index values~
+		LOG ~original_base_index = %original_base_index%, new_base_index = %new_base_index%, index_range = %index_range%~
+		OUTER_SET continue = 0
+	END
+	ACTION_IF (continue = 1) THEN
+	BEGIN
+		ACTION_IF (index_range = 0) THEN
+		BEGIN
+			OUTER_SET succeeded = 1
+		END
+		ELSE BEGIN
+			LOG ~In CopyPVRZResource incorrect number of files supplied in pvrz_files~
+		END
+	END
+END
+
+/*******************************************************************************
+ * MultiCopyPVRZResource
+ * Variation on CopyPVRZResource that allows multiple resource_files
+ * that reference the same pvrz file(s). Does not support resource_file renaming
+ *
+ * This is to be used when one or more V2 BAM/MOS files reference the same set of
+ * one or more PVRZ files.
+ *
+ * Inputs:
+ * 	source_folder
+ *		Folder containing the resource and pvrz files. Default is %MOD_FOLDER%/copy
+ * 	resource_file
+ *		Space/tab separated list of simple name of the BAM/MOS file(s). No default - required
+ * 	pvrz_files
+ *		Space/tab separated list of pvrz file names matching case insensitive regex:
+ * 		~MOS[0-9]+\.PVRZ~ . No default - required
+ *
+ * Return:
+ *	succeeded
+ *		1 => success, 0 => failure
+ *
+ * Logs:
+ *	Failure descriptions
+ ******************************************************************************/
+ DEFINE_ACTION_FUNCTION MultiCopyPVRZResource
+	STR_VAR
+		source_folder = EVAL ~%MOD_FOLDER%/copy~
+		resource_file = ~~
+		pvrz_files = ~~
+	RET
+		succeeded
+BEGIN
+	OUTER_SET succeeded = 0
+	OUTER_SET continue = 1
+
+	OUTER_PATCH ~%resource_file%~
+	BEGIN
+		REPLACE_EVALUATE ~[%TAB% ]*\([A-Za-z0-9]+\.\(\([Bb][Aa][Mm]\)\|\([Mm][Oo][Ss]\)\)\)~
+		BEGIN
+			PATCH_IF continue THEN
+			BEGIN
+				INNER_ACTION
+				BEGIN
+	      			LAF CopyPVRZResource 
+	      				STR_VAR 
+	      					source_folder = EVAL ~%source_folder%~
+	      					resource_file = EVAL ~%MATCH1%~
+	      					pvrz_files = EVAL ~%pvrz_files%~
+	      				RET 
+	      					continue = succeeded
+	      			END
+	      		END
+			END
+		END
+		~~
+	END
+	OUTER_SET succeeded = %continue%
+END

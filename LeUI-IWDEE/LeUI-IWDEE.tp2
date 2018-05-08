@@ -1,0 +1,115 @@
+BACKUP ~LeUI-IWDEE/backup~
+AUTHOR ~lefreut@forum.baldursgate.com~
+VERSION ~1.0~
+
+ALWAYS
+	INCLUDE ~LeUI-IWDEE/lib/CopyPVRZ.tph~
+END
+
+LANGUAGE
+	~English~ ~en_US~ ~LeUI-IWDEE/lang/en_US/setup.tra~
+
+BEGIN @10000
+	REQUIRE_PREDICATE (FILE_EXISTS_IN_GAME ~UI.MENU~ AND GAME_IS ~iwdee~) @90000
+
+	COPY ~LeUI-IWDEE/copy/UI.menu~ ~override~
+	COPY ~LeUI-IWDEE/copy/M_STYLES.lua~ ~override~
+	COPY ~LeUI-IWDEE/copy/box3.PVRZ~ ~override~
+	COPY ~LeUI-IWDEE/copy/box8.PVRZ~ ~override~
+	COPY ~LeUI-IWDEE/copy/INITIALS.BAM~ ~override~
+	COPY ~LeUI-IWDEE/copy/STORBAG.BAM~ ~override~
+	COPY ~LeUI-IWDEE/copy/STORINN.BAM~ ~override~
+	COPY ~LeUI-IWDEE/copy/STORSTOR.BAM~ ~override~
+	COPY ~LeUI-IWDEE/copy/STORTMPL.BAM~ ~override~
+	COPY ~LeUI-IWDEE/copy/STORTVRN.BAM~ ~override~
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~box5.MOS~
+			pvrz_files = ~MOS4000.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~box5b.MOS~
+			pvrz_files = ~MOS4001.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUISCRC.BAM~
+			pvrz_files = ~MOS4002.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUIAPBR.MOS~
+			pvrz_files = ~MOS4003.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUIGEND1.BAM~
+			pvrz_files = ~MOS4004.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUISRRQB.MOS~
+			pvrz_files = ~MOS4005.PVRZ~
+		RET
+	END
+
+	LAF MultiCopyPVRZResource
+		STR_VAR
+			resource_file = ~ROUNDBUT.BAM SLDRSTAR.BAM~
+			pvrz_files = ~MOS4006.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUICGSND.MOS~
+			pvrz_files = ~MOS4007.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUIBAR.MOS~
+			pvrz_files = ~MOS4008.PVRZ~
+		RET
+	END
+
+	LAF MultiCopyPVRZResource
+		STR_VAR
+			resource_file = ~GUIBTACT.BAM GUIWDBUT.BAM~
+			pvrz_files = ~MOS4009.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~INVENTOR.MOS~
+			pvrz_files = ~MOS4010.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUIMGB.MOS~
+			pvrz_files = ~MOS4011.PVRZ~
+		RET
+	END
+
+	LAF CopyPVRZResource
+		STR_VAR
+			resource_file = ~GUIPRB.MOS~
+			pvrz_files = ~MOS4012.PVRZ~
+		RET
+	END

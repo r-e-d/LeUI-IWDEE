@@ -2,7 +2,7 @@
 
 The goal of this mod is to provide an improved UI for Icewind Dale Enhanced Edition games.
 
-See https://forums.beamdog.com/discussion/61571/mod-lefreuts-enhanced-ui-for-bg1ee-sod-bg2ee-and-eet/p1 for more information and screens.
+See https://forums.beamdog.com/discussion/70645/mod-lefreuts-enhanced-ui-for-iwdee/p1 for more information and screens.
 
 ## Installation
 

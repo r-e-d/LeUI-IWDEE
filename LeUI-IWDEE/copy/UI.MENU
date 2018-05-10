@@ -14273,6 +14273,7 @@ menu
 	name 'WORLD_DIALOG_CONFIRM'
 	align center bottom
 	ignoreEsc
+	offset 0 -8
 	button
 	{
 		area 0 0 300 44
@@ -19810,7 +19811,7 @@ menu
 	ignoreesc
 	onOpen
 	"
-		existingDifficulty = Infinity_GetOption(12, 8) + 1;
+		existingDifficulty = Infinity_GetOption(12, 8) + 1
 		multiplayerFromInGame = multiplayerScreen:GetEngineState() == 2
 	"
 	label
@@ -19918,7 +19919,6 @@ menu
 				text lua	"t('MULTIPLAYER_CHANGE_PLAYER_BUTTON')"
 				text style 	"button"
 			}
-
 		}
 		column --portrait
 		{
@@ -19976,7 +19976,6 @@ menu
 				fill 		0 0 0 170
 				enabled 	"shouldGreyscaleEditButton(rowNumber)"
 			}
-
 		}
 		column --ready
 		{
@@ -19987,11 +19986,8 @@ menu
 				text lua	"getMultiplayerCharacterReadyText(rowNumber)"
 				text style 	"label"
 			}
-
 		}
-
 		area 				520 112 475 570
-
 		rowheight			95
 		table				"mpaCharacters"
 		var					selectedCharacter
@@ -20221,7 +20217,6 @@ menu
 				align 		left center
 				enabled 	"getPlayerKickWidth(rowNumber) ~= 0"
 			}
-
 		}
 		column --portraits
 		{
@@ -20239,9 +20234,7 @@ menu
 				area		6 5 45 45
 			}
 		}
-
 		area 				52 339 442 306
-
 		rowheight			51
 		table				"mpaPlayers"
 		var					selectedPlayer

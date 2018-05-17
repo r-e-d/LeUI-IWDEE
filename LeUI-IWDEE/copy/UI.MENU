@@ -8,6 +8,11 @@ end
 listMetaInfo = {}
 combatLog = {}
 
+showSidebarToggle = false
+showQuickSaveButton = false
+showHelpButton = false
+showHighlightButton = false
+
 lastRandomButtonSequence = -1
 function getRandomButtonSequence(buttonImage)
 	local ret = 0
@@ -5496,6 +5501,16 @@ menu
 			e:GetActiveEngine():OnLeftPanelButtonClick(8)
 		"
 	}
+	button
+	{
+		enabled "showSidebarToggle"
+		area 6 0 67 16
+		bam GUIPNL10
+		action
+		"
+			toggleSidebar('LEFT')
+		"
+	}
 }
 menu
 {
@@ -5507,6 +5522,56 @@ menu
 	button
 	{
 		area 2 0 73 55
+		enabled "showQuickSaveButton and worldScreen == e:GetActiveEngine() and showJournal ~= 1 and showHelpButton"
+		bam GUILS10
+		sequence 15
+		tooltip lua "getTooltipWithHotkey(28,34763)"
+		tooltip force top
+		clickable lua "sidebarsGreyed ~= 1"
+		action
+		"
+			worldScreen:OnQuickSaveButtonClick(false)
+		"
+		actionAlt
+		"
+			worldScreen:OnQuickSaveButtonClick(true)
+		"
+	}
+	button
+	{
+		area 2 55 73 55
+		enabled "showQuickSaveButton and worldScreen == e:GetActiveEngine() and showJournal ~= 1 and not showHelpButton"
+		bam GUILS10
+		sequence 15
+		tooltip lua "getTooltipWithHotkey(28,34763)"
+		tooltip force top
+		clickable lua "sidebarsGreyed ~= 1"
+		action
+		"
+			worldScreen:OnQuickSaveButtonClick(false)
+		"
+		actionAlt
+		"
+			worldScreen:OnQuickSaveButtonClick(true)
+		"
+	}
+	button
+	{
+		area 2 55 73 55
+		enabled "showHelpButton and worldScreen == e:GetActiveEngine() and showJournal ~= 1"
+		bam GUILS10
+		sequence 16
+		tooltip lua "Infinity_FetchString(34772)"
+		tooltip force top
+		clickable lua "sidebarsGreyed ~= 1"
+		action
+		"
+			Infinity_PushMenu('HELP')
+		"
+	}
+	button
+	{
+		area 2 110 73 55
 		bam GUILS10
 		sequence 9
 		tooltip lua "getTooltipWithHotkey(31,11942)"
@@ -5522,7 +5587,7 @@ menu
 	label
 	{
 		enabled "worldScreen == e:GetActiveEngine()"
-		area 0 60 74 80
+		area 0 170 74 80
 		bam "CGEAR"
 		frame lua "timer:GetCurrentTime() % 59"
 		useOverlayTint "worldScreen:CheckIfPaused()"
@@ -5531,7 +5596,7 @@ menu
 	button
 	{
 		enabled "worldScreen == e:GetActiveEngine()"
-		area 0 60 74 80
+		area 0 170 74 80
 		tooltip lua "worldScreen:GetCurrentTimeString()"
 		tooltip force top
 		clickable lua "sidebarsGreyed ~= 1"
@@ -5543,7 +5608,7 @@ menu
 	label
 	{
 		enabled "worldScreen == e:GetActiveEngine()"
-		area 0 60 74 74
+		area 0 170 74 74
 		bam "GEARMASK"
 		scaleToClip
 		useOverlayTint "worldScreen:CheckIfPaused()"
@@ -5736,6 +5801,16 @@ menu
 		tooltip lua "Infinity_GetPortraitTooltip(5)"
 		clickable lua "sidebarsGreyed ~= 1"
 	}
+	button
+	{
+		enabled "showSidebarToggle"
+		area 10 0 67 16
+		bam GUIPNL10
+		action
+		"
+			toggleSidebar('RIGHT')
+		"
+	}
 }
 menu
 {
@@ -5745,7 +5820,7 @@ menu
 	button
 	{
 		area 0 0 73 55
-		enabled "e:IsTouchUI() and worldScreen == e:GetActiveEngine()"
+		enabled "e:IsTouchUI() and worldScreen == e:GetActiveEngine() and showJournal ~= 1 and showHighlightButton"
 		toggle selectionButtonToggle
 		bam GUILS10
 		sequence 14
@@ -5759,6 +5834,34 @@ menu
 	button
 	{
 		area 0 55 73 55
+		enabled "e:IsTouchUI() and worldScreen == e:GetActiveEngine() and showJournal ~= 1 and not showHighlightButton"
+		toggle selectionButtonToggle
+		bam GUILS10
+		sequence 14
+		tooltip lua "Infinity_FetchString(34764)"
+		clickable lua "sidebarsGreyed ~= 1"
+		action
+		"
+			worldScreen:OnSelectionButtonClick()
+		"
+	}
+	button
+	{
+		area 0 55 73 55
+		enabled "showHighlightButton and worldScreen == e:GetActiveEngine() and showJournal ~= 1"
+		toggle highlightButtonToggle
+		bam GUILS10
+		sequence 11
+		tooltip lua "Infinity_FetchString(40879)"
+		clickable lua "sidebarsGreyed ~= 1"
+		action
+		"
+			worldScreen:SetHighlightEnabled(highlightButtonToggle == 1)
+		"
+	}
+	button
+	{
+		area 0 110 73 55
 		enabled "worldScreen == e:GetActiveEngine()"
 		toggle aiButtonToggle
 		bam GUILS10
@@ -5772,7 +5875,7 @@ menu
 	}
 	button
 	{
-		area 0 110 73 55
+		area 0 165 73 55
 		enabled "worldScreen == e:GetActiveEngine()"
 		bam GUILS10
 		sequence 13
@@ -10526,6 +10629,54 @@ menu
 		text style "normal"
 		align center center
 	}
+	button
+	{
+		enabled "storeScreen:IsContainer()"
+		area 180 545 32 32
+		bam "ROUNDBUT"
+		scaleToClip
+		action
+		"
+			for k,v in ipairs(store.storeItems) do
+				if v.clickable == 1 and v.valid == 1 and v.highlight == 0 then
+					storeScreen:SelectStoreItem(k - 1, true)
+					local maxCount = v.maxCount
+					if maxCount > 1 then
+						storeScreen:SetStoreItemCount(k - 1, maxCount)
+					end
+					if not storeScreen:IsBuyItemButtonClickable() then
+						storeScreen:SelectStoreItem(k - 1, false)
+						break
+					end
+				end
+			end
+		"
+	}
+	button
+	{
+		area 640 545 32 32
+		bam "ROUNDBUT"
+		scaleToClip
+		action
+		"
+			for k,v in ipairs(store.groupItems) do
+				if v.valid == 1 and v.highlight == 0 then
+					storeScreen:SelectGroupItem(k - 1, true)
+					local count = v.item.count
+					local stock = v.numInStock or 0
+					if count > 1 then
+						storeScreen:SetGroupItemCount(k - 1, count)
+					elseif stock > 1 then
+						storeScreen:SetGroupItemCount(k - 1, stock)
+					end
+					if not storeScreen:IsSellItemButtonClickable() then
+						storeScreen:SelectGroupItem(k - 1, false)
+						break
+					end
+				end
+			end
+		"
+	}
 
 	label
 	{
@@ -13998,7 +14149,6 @@ menu
 	}
 	button
 	{
-		area 0 0 0 0
 		on pageup
 		action
 		"
@@ -14007,7 +14157,6 @@ menu
 	}
 	button
 	{
-	 	area 0 0 0 0
 		on pagedown
 		action
 		"
@@ -14148,7 +14297,6 @@ menu
 	}
 	button
 	{
-		area 0 0 0 0
 		on pageup
 		action
 		"
@@ -14157,7 +14305,6 @@ menu
 	}
 	button
 	{
-	 	area 0 0 0 0
 		on pagedown
 		action
 		"
@@ -14693,7 +14840,7 @@ menu
 	button
 	{
 		enabled "not CurrentlyInGame()"
-		area 122 538 77 68
+		area 122 526 77 68
 		bam GUIGEND1
 		frame lua "gender == 1 and 2 or 0"
 		sequence 0
@@ -14707,7 +14854,7 @@ menu
 	button
 	{
 		enabled "not CurrentlyInGame()"
-		area 226 538 77 68
+		area 226 526 77 68
 		bam GUIGEND1
 		frame lua "gender == 2 and 2 or 0"
 		sequence 1
@@ -14725,30 +14872,32 @@ menu
 			width 100
 			label
 			{
-				area 0 0 57 90
-				bitmap lua "portraitTable[rowNumber]"
-				glow lua "rowNumber == mouseoverRow"
-			}
-			label
-			{
-				area 70 0 -1 -1
+				area 0 0 378 94
+				pad 54 0 0 0
 				text lua "getPortrait(rowNumber)"
 				text style 'label'
-				glow lua "rowNumber == mouseoverRow"
+				-- glow lua "rowNumber == mouseoverRow"
+				glow lua "rowNumber == selPortrait"
 			}
+			-- label
+			-- {
+				-- enabled "selPortrait ~= rowNumber"
+				-- area 0 0 378 94
+				-- rectangle 1
+				-- rectangle opacity 150
+			-- }
 			label
 			{
-				enabled "selPortrait ~= rowNumber"
-				area 0 0 378 94
-				rectangle 1
-				rectangle opacity 150
+				area 0 0 57 90
+				bitmap lua "portraitTable[rowNumber]"
+				-- glow lua "rowNumber == mouseoverRow"
 			}
 		}
 		actionEnter	""
 		actionExit	"mouseoverRow = 0"
 		rowheight 94
 		hidehighlight
-		area 440 122 378 470
+		area 440 120 378 470
 		table "portraitTable"
 		var selPortrait
 		scrollbar 'GUISCRC'
@@ -14823,19 +14972,19 @@ menu
 	}
 	label
 	{
-		area 107 200 210 330
+		area 107 188 210 330
 		bitmap lua "portraitTable[selPortrait]"
 	}
 	label
 	{
 		enabled "portraitTable[selPortrait]:sub(-1) == 'L'"
-		area 344 320 64 90
+		area 340 308 64 90
 		bam GUIRSP10
 	}
 	label
 	{
 		enabled "portraitTable[selPortrait]:sub(-1) == 'L'"
-		area 348 322 55 85
+		area 344 310 55 85
 		bitmap lua "portraitTable[selPortrait]:sub(1, -2) .. 'M'"
 	}
 	button
@@ -24644,7 +24793,7 @@ menu
 	}
 	button
 	{
-		area 3 14 73 55
+		area 2 14 73 55
 		bam GUILS10
 		sequence 0
 		tooltip lua "getTooltipWithHotkey(2,16313)"
@@ -24656,7 +24805,7 @@ menu
 	}
 	button
 	{
-		area 3 69 73 55
+		area 2 69 73 55
 		bam GUILS10
 		sequence 1
 		tooltip lua "getTooltipWithHotkey(4,14648)"
@@ -24668,7 +24817,7 @@ menu
 	}
 	button
 	{
-		area 3 124 73 55
+		area 2 124 73 55
 		bam GUILS10
 		sequence 2
 		tooltip lua "getTooltipWithHotkey(3,16308)"
@@ -24680,7 +24829,7 @@ menu
 	}
 	button
 	{
-		area 3 179 73 55
+		area 2 179 73 55
 		bam GUILS10
 		sequence 3
 		tooltip lua "getTooltipWithHotkey(0,16307)"
@@ -24692,7 +24841,7 @@ menu
 	}
 	button
 	{
-		area 3 234 73 55
+		area 2 234 73 55
 		bam GUILS10
 		sequence 4
 		tooltip lua "getTooltipWithHotkey(1,16306)"
@@ -24704,7 +24853,7 @@ menu
 	}
 	button
 	{
-		area 3 289 73 55
+		area 2 289 73 55
 		bam GUILS10
 		sequence 5
 		tooltip lua "getTooltipWithHotkey(5,16309)"
@@ -24716,7 +24865,7 @@ menu
 	}
 	button
 	{
-		area 3 344 73 55
+		area 2 344 73 55
 		bam GUILS10
 		sequence 6
 		tooltip lua "getTooltipWithHotkey(6,14930)"
@@ -24728,7 +24877,7 @@ menu
 	}
 	button
 	{
-		area 3 399 73 55
+		area 2 399 73 55
 		bam GUILS10
 		sequence 7
 		tooltip lua "getTooltipWithHotkey(7,16311)"
@@ -24740,7 +24889,7 @@ menu
 	}
 	button
 	{
-		area 3 454 73 55
+		area 2 454 73 55
 		enabled "e:IsMultiplayer()"
 		bam GUILS10
 		sequence 8
@@ -24756,16 +24905,14 @@ menu
 {
 	name 'LEFT_SIDEBAR_BOTTOM_HELP'
 	align left bottom
-	offset 0 0
-	--combined height of these buttons makes a menu with height = 231, menu is placed into lower left. y pos is offset from top of this menu.
 	ignoreEsc
 	button
 	{
-		area 3 0 73 55
-		enabled "worldScreen == e:GetActiveEngine()"
+		area 2 0 73 55
+		enabled "showQuickSaveButton and worldScreen == e:GetActiveEngine()"
 		bam GUILS10
 		sequence 15
-		tooltip lua "getTooltipWithHotkey(28,34763)" --37861
+		tooltip lua "getTooltipWithHotkey(28,34763)"
 		glow lua "true"
 		action
 		"
@@ -24774,11 +24921,11 @@ menu
 	}
 	button
 	{
-		area 3 56 73 55
+		area 2 55 73 55
 		enabled "worldScreen == e:GetActiveEngine()"
 		bam GUILS10
 		sequence 16
-		tooltip lua  "Infinity_FetchString(34772)" --"getTooltipWithHotkey(16,34772)"
+		tooltip lua "Infinity_FetchString(34772)"
 		glow lua "true"
 		action
 		"
@@ -24787,7 +24934,7 @@ menu
 	}
 	button
 	{
-		area 3 112 73 55
+		area 2 110 73 55
 		bam GUILS10
 		sequence 9
 		tooltip lua "getTooltipWithHotkey(31,11942)"
@@ -24802,7 +24949,7 @@ menu
 	label
 	{
 		enabled "worldScreen == e:GetActiveEngine()"
-		area 0 182 73 74
+		area 0 170 74 80
 		bam "CGEAR"
 		frame lua "timer:GetCurrentTime() % 59"
 		useOverlayTint "worldScreen:CheckIfPaused()"
@@ -24811,7 +24958,7 @@ menu
 	button
 	{
 		enabled "worldScreen == e:GetActiveEngine()"
-		area 0 182 73 74
+		area 0 170 74 74
 		bam "GEARMASK"
 		scaleToClip
 		useOverlayTint "worldScreen:CheckIfPaused()"
@@ -24939,11 +25086,10 @@ menu
 	name 'RIGHT_SIDEBAR_BOTTOM_HELP'
 	align right bottom
 	ignoreEsc
-	--Buttons form a menu aligned bottom right, with height = 197, y is offset from top of that menu.
 	button
 	{
-		area 6 0 71 48
-		enabled "e:IsTouchUI() and worldScreen == e:GetActiveEngine()"
+		area 0 0 73 55
+		enabled "e:IsTouchUI() and worldScreen == e:GetActiveEngine() and showHighlightButton"
 		bam GUILS10
 		sequence 14
 		glow lua "true"
@@ -24955,8 +25101,21 @@ menu
 	}
 	button
 	{
-		area 6 49 71 48
-		enabled "worldScreen == e:GetActiveEngine()"
+		area 0 55 73 55
+		enabled "e:IsTouchUI() and worldScreen == e:GetActiveEngine() and not showHighlightButton"
+		bam GUILS10
+		sequence 14
+		glow lua "true"
+		tooltip lua "Infinity_FetchString(34764)"
+		action
+		"
+			currentButtonHelp = 13
+		"
+	}
+	button
+	{
+		area 0 55 73 55
+		enabled "showHighlightButton and worldScreen == e:GetActiveEngine()"
 		tooltip lua "Infinity_FetchString(40879)"
 		bam GUILS10
 		sequence 11
@@ -24968,7 +25127,7 @@ menu
 	}
 	button
 	{
-		area 6 99 71 48
+		area 0 110 73 55
 		enabled "worldScreen == e:GetActiveEngine()"
 		tooltip lua "getPartyAITooltip()"
 		bam GUILS10
@@ -24981,7 +25140,7 @@ menu
 	}
 	button
 	{
-		area 6 149 71 48
+		area 0 165 73 55
 		enabled "worldScreen == e:GetActiveEngine()"
 		tooltip lua "Infinity_FetchString(10485)"
 		bam GUILS10
@@ -24997,24 +25156,19 @@ menu
 {
 	name "WORLD_ACTIONBAR_HELP"
 	align center bottom
-	onOpen
-	"
-	"
-	onClose
-	"
-	"
 	ignoreEsc
 	label
 	{
-		area 0 0 746 57
-		mosaic GUWBTP10
+		area 0 0 700 54
+		mosaic GUIBAR
 	}
 	button
 	{
-		area 21 12 32 32
+		area 0 0 52 52
+		align center center
 		bam ROUNDBUT
+		sequence 1
 		glow lua "true"
-		scaleToClip
 		action
 		"
 			currentButtonHelp = 24
@@ -25022,7 +25176,7 @@ menu
 	}
 	button
 	{
-		area 68 1 52 52
+		area 54 0 52 52
 		actionBar 0
 		enabled "buttonArray:GetButtonEnabled(0)"
 		tooltip lua "actionBarTooltip[0]"
@@ -25034,7 +25188,7 @@ menu
 	}
 	button
 	{
-		area 122 1 52 52
+		area 108 0 52 52
 		actionBar 1
 		enabled "buttonArray:GetButtonEnabled(1)"
 		tooltip lua "actionBarTooltip[1]"
@@ -25046,7 +25200,7 @@ menu
 	}
 	button
 	{
-		area 177 1 52 52
+		area 162 0 52 52
 		actionBar 2
 		enabled "buttonArray:GetButtonEnabled(2)"
 		tooltip lua "actionBarTooltip[2]"
@@ -25058,7 +25212,7 @@ menu
 	}
 	button
 	{
-		area 231 1 52 52
+		area 216 0 52 52
 		actionBar 3
 		enabled "buttonArray:GetButtonEnabled(3)"
 		tooltip lua "actionBarTooltip[3]"
@@ -25070,7 +25224,7 @@ menu
 	}
 	button
 	{
-		area 299 1 52 52
+		area 270 0 52 52
 		actionBar 4
 		enabled "buttonArray:GetButtonEnabled(4)"
 		tooltip lua "actionBarTooltip[4]"
@@ -25082,7 +25236,7 @@ menu
 	}
 	button
 	{
-		area 353 1 52 52
+		area 324 0 52 52
 		actionBar 5
 		enabled "buttonArray:GetButtonEnabled(5)"
 		tooltip lua "actionBarTooltip[5]"
@@ -25094,7 +25248,7 @@ menu
 	}
 	button
 	{
-		area 407 1 52 52
+		area 378 0 52 52
 		actionBar 6
 		enabled "buttonArray:GetButtonEnabled(6)"
 		tooltip lua "actionBarTooltip[6]"
@@ -25106,7 +25260,7 @@ menu
 	}
 	button
 	{
-		area 461 1 52 52
+		area 432 0 52 52
 		actionBar 7
 		enabled "buttonArray:GetButtonEnabled(7)"
 		tooltip lua "actionBarTooltip[7]"
@@ -25119,7 +25273,7 @@ menu
 
 	button
 	{
-		area 528 1 52 52
+		area 486 0 52 52
 		actionBar 8
 		enabled "buttonArray:GetButtonEnabled(8)"
 		tooltip lua "actionBarTooltip[8]"
@@ -25131,7 +25285,7 @@ menu
 	}
 	button
 	{
-		area 582 1 52 52
+		area 540 0 52 52
 		actionBar 9
 		enabled "buttonArray:GetButtonEnabled(9)"
 		tooltip lua "actionBarTooltip[9]"
@@ -25143,7 +25297,7 @@ menu
 	}
 	button
 	{
-		area 636 1 52 52
+		area 594 0 52 52
 		actionBar 10
 		enabled "buttonArray:GetButtonEnabled(10)"
 		tooltip lua "actionBarTooltip[10]"
@@ -25155,7 +25309,7 @@ menu
 	}
 	button
 	{
-		area 689 1 52 52
+		area 648 0 52 52
 		actionBar 11
 		enabled "buttonArray:GetButtonEnabled(11)"
 		tooltip lua "actionBarTooltip[11]"

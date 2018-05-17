@@ -113,3 +113,24 @@ BEGIN @10000
 			pvrz_files = ~MOS4012.PVRZ~
 		RET
 	END
+
+BEGIN @10001
+	REQUIRE_PREDICATE GAME_IS ~iwdee~ @90000
+	COPY_EXISTING ~UI.menu~ ~override~
+		REPLACE_TEXTUALLY ~showSidebarToggle = false~ ~showSidebarToggle = true~
+
+BEGIN @10002
+	REQUIRE_PREDICATE GAME_IS ~iwdee~ @90000
+	COPY_EXISTING ~UI.menu~ ~override~
+		REPLACE_TEXTUALLY ~showQuickSaveButton = false~ ~showQuickSaveButton = true~
+
+BEGIN @10003
+	REQUIRE_PREDICATE GAME_IS ~iwdee~ @90000
+	COPY_EXISTING ~UI.menu~ ~override~
+		REPLACE_TEXTUALLY ~showHelpButton = false~ ~showHelpButton = true~
+
+BEGIN @10004
+	REQUIRE_PREDICATE GAME_IS ~iwdee~ @90000
+	COPY_EXISTING ~UI.menu~ ~override~
+		REPLACE_TEXTUALLY ~showHighlightButton = false~ ~showHighlightButton = true~
+

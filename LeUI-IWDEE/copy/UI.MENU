@@ -14510,10 +14510,11 @@ menu
 		text style "button"
 		bam GUIOSTUR
 		clickable lua "selectedCharacter ~= 0"
-		action "
+		action
+		"
 			createCharScreen:OnPrerollCharacterPick(character_select[selectedCharacter].id)
 			Infinity_PopMenu('CHARACTER_SELECT')
-			"
+		"
 	}
 }
 `
@@ -18095,7 +18096,7 @@ menu
 	label
 	{
 		area 82 12 700 40
-		text "ABILITIES_TITLE"
+		text "HIGH_LEVEL_ABILITIES_TITLE"
 		text style "title"
 	}
 	label
@@ -18189,7 +18190,6 @@ menu
 		clickable lua "createCharScreen:IsDoneButtonClickable()"
 		action
 		"
-			createCharScreen:OnDoneButtonClick()
 			createCharScreen:OnDoneButtonClick()
 		"
 	}
@@ -19819,7 +19819,6 @@ function broadcastCharacterControlChange(slot, newPlayer)
 		local message = t("MULTIPLAYER_SLOT_"..slot.."_ASSIGNED_TO")
 		removeStringTokenLua("<PLAYER_NAME_1>")
 		removeStringTokenLua("<PLAYER_NAME_2>")
-		print(message)
 		Infinity_SendChatMessage(message, true)
 	end
 end
@@ -19832,7 +19831,6 @@ function broadcastCharacterAdded(slot)
 	local message = t("MULTIPLAYER_HAS_ADDED")
 	removeStringTokenLua("<PLAYER_NAME_1>")
 	removeStringTokenLua("<CHARACTER_NAME_1>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -19844,7 +19842,6 @@ function broadcastCharacterRemoved(slot)
 	local message = t("MULTIPLAYER_HAS_REMOVED")
 	removeStringTokenLua("<PLAYER_NAME_1>")
 	removeStringTokenLua("<CHARACTER_NAME_1>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -19853,7 +19850,6 @@ function broadcastCharacterReady(slot)
 	setStringTokenLua("<CHARACTER_NAME_1>",character)
 	local message = t("MULTIPLAYER_IS_READY_TO_START")
 	removeStringTokenLua("<CHARACTER_NAME_1>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -19862,7 +19858,6 @@ function broadcastCharacterNotReady(slot)
 	setStringTokenLua("<CHARACTER_NAME_1>",character)
 	local message = t("MULTIPLAYER_IS_NO_LONGER_READY")
 	removeStringTokenLua("<CHARACTER_NAME_1>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -19871,7 +19866,6 @@ function broadcastPlayerAdded(slot)
 	setStringTokenLua("<PLAYER_NAME_1>",player)
 	local message = t("MULTIPLAYER_HAS_JOINED_THE_GAME")
 	removeStringTokenLua("<PLAYER_NAME_1>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -19880,7 +19874,6 @@ function broadcastPlayerRemoved(slot)
 	setStringTokenLua("<PLAYER_NAME_1>",player)
 	local message = t("MULTIPLAYER_HAS_LEFT_THE_GAME")
 	removeStringTokenLua("<PLAYER_NAME_1>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -21359,7 +21352,6 @@ function broadcastPermissionChange(player,permission,setting)
 	end
 	removeStringTokenLua("<PLAYER_NAME_1>")
 	removeStringTokenLua("<PERMISSION>")
-	print(message)
 	Infinity_SendChatMessage(message, true)
 end
 
@@ -21648,7 +21640,6 @@ function broadcastOptionChange(slot, onOff)
 			message = t("MULTIPLAYER_IMPORT_SETTINGS_CHANGE")
 			removeStringTokenLua("<IMPORT_RULES>")
 		end
-		print(message)
 		Infinity_SendChatMessage(message, true)
 	end
 end

@@ -1,6 +1,6 @@
 BACKUP ~LeUI-IWDEE/backup~
 AUTHOR ~lefreut@forum.baldursgate.com~
-VERSION ~1.0~
+VERSION ~1.2~
 
 ALWAYS
 	INCLUDE ~LeUI-IWDEE/lib/CopyPVRZ.tph~

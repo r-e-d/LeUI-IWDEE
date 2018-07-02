@@ -2017,7 +2017,7 @@ menu
 		sequenceonce lua "getRandomButtonSequence('GUIBUTWT')"
 		area 68 124 300 44
 		text style "button"
-		text "PLAY_GAME_BUTTON"
+		text "PLAY_SOUND_BUTTON"
 		action
 		"
 			characterScreen:OnPlayButtonClick();
@@ -7691,8 +7691,8 @@ menu
 	}
 }
 `
-shownSpellOffset = 0
-numberOfKnownMageSpellSlots = 24
+spellOffset = 0
+memorizedOffset = 0
 mageName = ""
 function magePageInfo()
 	if bookMode == 0 then -- Regular
@@ -7832,7 +7832,10 @@ end
 
 function setMageBookLevel(num)
 	currentBookSpell = 0
-	shownSpellOffset = 0
+	forceSpellScroll = true
+	forceMemorizedScroll = true
+	spellOffset = 0
+	memorizedOffset = 0
 	if currentSpellLevel ~= num then
 		Infinity_PlaySound('GAM_05')
 	end
@@ -7884,19 +7887,20 @@ function showMemorizationSparkle(instanceId)
 end
 
 function unmemorizingMageSpell(resref)
-	local index = 1
-	local sparkle = -1
-	for index = 1, #(bottomSpells), 1 do
-		if bottomSpells[index].resref == resref then
-			sparkle = index
-			if bottomSpells[index].castable == 0 then
+	local index = 0
+	for k,v in pairs(bottomSpells) do
+		if v.resref == resref then
+			index = k
+			if v.castable == 0 then
 				break
 			end
 		end
 	end
-
-	local x,y,w,h = Infinity_GetArea("BUTTON_MEMORIZEDSPELL_" .. sparkle)
-	createMageMemorizationSparkle(x, y, w, h, 'memorizedListMage', sparkle)
+	index = index - memorizedOffset
+	if index > 0 and index < 25 then
+		local x,y,w,h = Infinity_GetArea("BUTTON_MEMORIZEDSPELL_" .. index)
+		createMageMemorizationSparkle(x, y, w, h, 'memorizedListMage', index)
+	end
 end
 
 memorizationFlashes =
@@ -7924,7 +7928,7 @@ function getMageBookSpellLevelFrame(level)
 end
 
 function getMemorizedMageSpellSlotEnabled(slot)
-	local ret = true
+	slot = slot + memorizedOffset
 
 	if slot > characters[id].mageDetails[currentSpellLevel].maxMemorized then
 		return false
@@ -7932,7 +7936,7 @@ function getMemorizedMageSpellSlotEnabled(slot)
 		return false
 	end
 
-	return ret
+	return true
 end
 
 function showSpellDetails(spell, isMemorizedSlot)
@@ -7942,6 +7946,46 @@ function showSpellDetails(spell, isMemorizedSlot)
 	currentSpell = spell
 	showEraseButton = not isMemorizedSlot
 	Infinity_PushMenu("SPELL_DESCRIPTION")
+end
+
+function spellScrollItems()
+	if scrollDirection > 0 and spellOffset > 0 then
+		spellOffset = spellOffset - 4
+		forceSpellScroll = true
+	elseif scrollDirection < 0 and spellOffset / 4 + 6 < math.ceil(#bookSpells / 4) then
+		spellOffset = spellOffset + 4
+		forceSpellScroll = true
+	end
+end
+
+function spellScroll(top)
+	if forceSpellScroll then
+		forceSpellScroll = false
+		return -62 * spellOffset / 4
+	end
+
+	spellOffset = 4 * math.floor((-top + 31) / 62)
+	return nil
+end
+
+function memorizedScrollItems()
+	if scrollDirection > 0 and memorizedOffset > 0 then
+		memorizedOffset = memorizedOffset - 4
+		forceMemorizedScroll = true
+	elseif scrollDirection < 0 and memorizedOffset / 4 + 6 < math.ceil(#bottomSpellsPlaceHolder / 4) then
+		memorizedOffset = memorizedOffset + 4
+		forceMemorizedScroll = true
+	end
+end
+
+function memorizedScroll(top)
+	if forceMemorizedScroll then
+		forceMemorizedScroll = false
+		return -62 * memorizedOffset / 4
+	end
+
+	memorizedOffset = 4 * math.floor((-top + 31) / 62)
+	return nil
 end
 `
 menu
@@ -8092,35 +8136,52 @@ menu
 		text style "normal_parchment"
 	}
 
-	button {area 154 204 54 54	sequence 0	name "BUTTON_BOOKSPELL_1"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 1]"}
-	button {area 220 204 54 54	sequence 1	name "BUTTON_BOOKSPELL_2"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 2]"}
-	button {area 286 204 54 54	sequence 2	name "BUTTON_BOOKSPELL_3"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 3]"}
-	button {area 352 204 54 54	sequence 3	name "BUTTON_BOOKSPELL_4"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 4]"}
+	list
+	{
+		column
+		{
+			width 100
+			label
+			{
+				area 0 0 -1 -1
+			}
+		}
+		area 154 204 266 372
+		hidehighlight
+		rowheight 62
+		table "makeBlankTable(math.ceil(#bookSpells / 4))"
+		scrollbar 'GUISCRC'
+		scrollbar func "spellScroll"
+	}
+	button {area 154 204 54 54	sequence 0	name "BUTTON_BOOKSPELL_1"	spellinfo "bookSpells[spellOffset + 1]" 	actionScroll "spellScrollItems()"}
+	button {area 218 204 54 54	sequence 1	name "BUTTON_BOOKSPELL_2"	spellinfo "bookSpells[spellOffset + 2]" 	actionScroll "spellScrollItems()"}
+	button {area 282 204 54 54	sequence 2	name "BUTTON_BOOKSPELL_3"	spellinfo "bookSpells[spellOffset + 3]" 	actionScroll "spellScrollItems()"}
+	button {area 346 204 54 54	sequence 3	name "BUTTON_BOOKSPELL_4"	spellinfo "bookSpells[spellOffset + 4]" 	actionScroll "spellScrollItems()"}
 
-	button {area 154 266 54 54	sequence 4	name "BUTTON_BOOKSPELL_5"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 5]"}
-	button {area 220 266 54 54	sequence 5	name "BUTTON_BOOKSPELL_6"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 6]"}
-	button {area 286 266 54 54	sequence 6	name "BUTTON_BOOKSPELL_7"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 7]"}
-	button {area 352 266 54 54	sequence 7	name "BUTTON_BOOKSPELL_8"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 8]"}
+	button {area 154 266 54 54	sequence 4	name "BUTTON_BOOKSPELL_5"	spellinfo "bookSpells[spellOffset + 5]" 	actionScroll "spellScrollItems()"}
+	button {area 218 266 54 54	sequence 5	name "BUTTON_BOOKSPELL_6"	spellinfo "bookSpells[spellOffset + 6]" 	actionScroll "spellScrollItems()"}
+	button {area 282 266 54 54	sequence 6	name "BUTTON_BOOKSPELL_7"	spellinfo "bookSpells[spellOffset + 7]" 	actionScroll "spellScrollItems()"}
+	button {area 346 266 54 54	sequence 7	name "BUTTON_BOOKSPELL_8"	spellinfo "bookSpells[spellOffset + 8]" 	actionScroll "spellScrollItems()"}
 
-	button {area 154 328 54 54	sequence 8	name "BUTTON_BOOKSPELL_9"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 9]"}
-	button {area 220 328 54 54	sequence 9	name "BUTTON_BOOKSPELL_10"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 10]"}
-	button {area 286 328 54 54	sequence 0	name "BUTTON_BOOKSPELL_11"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 11]"}
-	button {area 352 328 54 54	sequence 1	name "BUTTON_BOOKSPELL_12"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 12]"}
+	button {area 154 328 54 54	sequence 8	name "BUTTON_BOOKSPELL_9"	spellinfo "bookSpells[spellOffset + 9]" 	actionScroll "spellScrollItems()"}
+	button {area 218 328 54 54	sequence 9	name "BUTTON_BOOKSPELL_10"	spellinfo "bookSpells[spellOffset + 10]"	actionScroll "spellScrollItems()"}
+	button {area 282 328 54 54	sequence 0	name "BUTTON_BOOKSPELL_11"	spellinfo "bookSpells[spellOffset + 11]"	actionScroll "spellScrollItems()"}
+	button {area 346 328 54 54	sequence 1	name "BUTTON_BOOKSPELL_12"	spellinfo "bookSpells[spellOffset + 12]"	actionScroll "spellScrollItems()"}
 
-	button {area 154 390 54 54	sequence 2	name "BUTTON_BOOKSPELL_13"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 13]"}
-	button {area 220 390 54 54	sequence 3	name "BUTTON_BOOKSPELL_14"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 14]"}
-	button {area 286 390 54 54	sequence 4	name "BUTTON_BOOKSPELL_15"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 15]"}
-	button {area 352 390 54 54	sequence 5	name "BUTTON_BOOKSPELL_16"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 16]"}
+	button {area 154 390 54 54	sequence 2	name "BUTTON_BOOKSPELL_13"	spellinfo "bookSpells[spellOffset + 13]"	actionScroll "spellScrollItems()"}
+	button {area 218 390 54 54	sequence 3	name "BUTTON_BOOKSPELL_14"	spellinfo "bookSpells[spellOffset + 14]"	actionScroll "spellScrollItems()"}
+	button {area 282 390 54 54	sequence 4	name "BUTTON_BOOKSPELL_15"	spellinfo "bookSpells[spellOffset + 15]"	actionScroll "spellScrollItems()"}
+	button {area 346 390 54 54	sequence 5	name "BUTTON_BOOKSPELL_16"	spellinfo "bookSpells[spellOffset + 16]"	actionScroll "spellScrollItems()"}
 
-	button {area 154 452 54 54	sequence 6	name "BUTTON_BOOKSPELL_17"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 17]"}
-	button {area 220 452 54 54	sequence 7	name "BUTTON_BOOKSPELL_18"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 18]"}
-	button {area 286 452 54 54	sequence 8	name "BUTTON_BOOKSPELL_19"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 19]"}
-	button {area 352 452 54 54	sequence 9	name "BUTTON_BOOKSPELL_20"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 20]"}
+	button {area 154 452 54 54	sequence 6	name "BUTTON_BOOKSPELL_17"	spellinfo "bookSpells[spellOffset + 17]"	actionScroll "spellScrollItems()"}
+	button {area 218 452 54 54	sequence 7	name "BUTTON_BOOKSPELL_18"	spellinfo "bookSpells[spellOffset + 18]"	actionScroll "spellScrollItems()"}
+	button {area 282 452 54 54	sequence 8	name "BUTTON_BOOKSPELL_19"	spellinfo "bookSpells[spellOffset + 19]"	actionScroll "spellScrollItems()"}
+	button {area 346 452 54 54	sequence 9	name "BUTTON_BOOKSPELL_20"	spellinfo "bookSpells[spellOffset + 20]"	actionScroll "spellScrollItems()"}
 
-	button {area 154 514 54 54	sequence 4	name "BUTTON_BOOKSPELL_21"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 21]"}
-	button {area 220 514 54 54	sequence 5	name "BUTTON_BOOKSPELL_22"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 22]"}
-	button {area 286 514 54 54	sequence 6	name "BUTTON_BOOKSPELL_23"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 23]"}
-	button {area 352 514 54 54	sequence 7	name "BUTTON_BOOKSPELL_24"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownMageSpellSlots + 24]"}
+	button {area 154 514 54 54	sequence 4	name "BUTTON_BOOKSPELL_21"	spellinfo "bookSpells[spellOffset + 21]"	actionScroll "spellScrollItems()"}
+	button {area 218 514 54 54	sequence 5	name "BUTTON_BOOKSPELL_22"	spellinfo "bookSpells[spellOffset + 22]"	actionScroll "spellScrollItems()"}
+	button {area 282 514 54 54	sequence 6	name "BUTTON_BOOKSPELL_23"	spellinfo "bookSpells[spellOffset + 23]"	actionScroll "spellScrollItems()"}
+	button {area 346 514 54 54	sequence 7	name "BUTTON_BOOKSPELL_24"	spellinfo "bookSpells[spellOffset + 24]"	actionScroll "spellScrollItems()"}
 
 	text
 	{
@@ -8130,59 +8191,76 @@ menu
 		text align right top
 	}
 
-	label  {area 450 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(1)"}
-	button {area 450 204 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_1"	memorizedspellinfo "bottomSpells[1]"	opacity lua "getSpellOpacity(1)"}
-	label  {area 516 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(2)"}
-	button {area 516 204 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_2"	memorizedspellinfo "bottomSpells[2]"	opacity lua "getSpellOpacity(2)"}
-	label  {area 582 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(3)"}
-	button {area 582 204 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_3"	memorizedspellinfo "bottomSpells[3]"	opacity lua "getSpellOpacity(3)"}
-	label  {area 648 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(4)"}
-	button {area 648 204 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_4"	memorizedspellinfo "bottomSpells[4]"	opacity lua "getSpellOpacity(4)"}
+	list
+	{
+		column
+		{
+			width 100
+			label
+			{
+				area 0 0 -1 -1
+			}
+		}
+		area 450 204 266 372
+		hidehighlight
+		rowheight 62
+		table "makeBlankTable(math.ceil(#bottomSpellsPlaceHolder / 4))"
+		scrollbar 'GUISCRC'
+		scrollbar func "memorizedScroll"
+	}
+	label  {area 450 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(1)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 204 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_1"	memorizedspellinfo "getBottomSpell(1)"	opacity lua "getSpellOpacity(1)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(2)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 204 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_2"	memorizedspellinfo "getBottomSpell(2)"	opacity lua "getSpellOpacity(2)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(3)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 204 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_3"	memorizedspellinfo "getBottomSpell(3)"	opacity lua "getSpellOpacity(3)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 204 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(4)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 204 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_4"	memorizedspellinfo "getBottomSpell(4)"	opacity lua "getSpellOpacity(4)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 450 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(5)"}
-	button {area 450 266 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_5"	memorizedspellinfo "bottomSpells[5]"	opacity lua "getSpellOpacity(5)"}
-	label  {area 516 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(6)"}
-	button {area 516 266 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_6"	memorizedspellinfo "bottomSpells[6]"	opacity lua "getSpellOpacity(6)"}
-	label  {area 582 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(7)"}
-	button {area 582 266 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_7"	memorizedspellinfo "bottomSpells[7]"	opacity lua "getSpellOpacity(7)"}
-	label  {area 648 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(8)"}
-	button {area 648 266 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_8"	memorizedspellinfo "bottomSpells[8]"	opacity lua "getSpellOpacity(8)"}
+	label  {area 450 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(5)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 266 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_5"	memorizedspellinfo "getBottomSpell(5)"	opacity lua "getSpellOpacity(5)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(6)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 266 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_6"	memorizedspellinfo "getBottomSpell(6)"	opacity lua "getSpellOpacity(6)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(7)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 266 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_7"	memorizedspellinfo "getBottomSpell(7)"	opacity lua "getSpellOpacity(7)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 266 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(8)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 266 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_8"	memorizedspellinfo "getBottomSpell(8)"	opacity lua "getSpellOpacity(8)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 450 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(9)"}
-	button {area 450 328 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_9"	memorizedspellinfo "bottomSpells[9]"	opacity lua "getSpellOpacity(9)"}
-	label  {area 516 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(10)"}
-	button {area 516 328 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_10"	memorizedspellinfo "bottomSpells[10]"	opacity lua "getSpellOpacity(10)"}
-	label  {area 582 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(11)"}
-	button {area 582 328 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_11"	memorizedspellinfo "bottomSpells[11]"	opacity lua "getSpellOpacity(11)"}
-	label  {area 648 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(12)"}
-	button {area 648 328 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_12"	memorizedspellinfo "bottomSpells[12]"	opacity lua "getSpellOpacity(12)"}
+	label  {area 450 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(9)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 328 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_9"	memorizedspellinfo "getBottomSpell(9)"	opacity lua "getSpellOpacity(9)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(10)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 328 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_10"	memorizedspellinfo "getBottomSpell(10)"	opacity lua "getSpellOpacity(10)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(11)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 328 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_11"	memorizedspellinfo "getBottomSpell(11)"	opacity lua "getSpellOpacity(11)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 328 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(12)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 328 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_12"	memorizedspellinfo "getBottomSpell(12)"	opacity lua "getSpellOpacity(12)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 450 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(13)"}
-	button {area 450 390 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_13"	memorizedspellinfo "bottomSpells[13]"	opacity lua "getSpellOpacity(13)"}
-	label  {area 516 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(14)"}
-	button {area 516 390 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_14"	memorizedspellinfo "bottomSpells[14]"	opacity lua "getSpellOpacity(14)"}
-	label  {area 582 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(15)"}
-	button {area 582 390 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_15"	memorizedspellinfo "bottomSpells[15]"	opacity lua "getSpellOpacity(15)"}
-	label  {area 648 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(16)"}
-	button {area 648 390 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_16"	memorizedspellinfo "bottomSpells[16]"	opacity lua "getSpellOpacity(16)"}
+	label  {area 450 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(13)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 390 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_13"	memorizedspellinfo "getBottomSpell(13)"	opacity lua "getSpellOpacity(13)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(14)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 390 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_14"	memorizedspellinfo "getBottomSpell(14)"	opacity lua "getSpellOpacity(14)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(15)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 390 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_15"	memorizedspellinfo "getBottomSpell(15)"	opacity lua "getSpellOpacity(15)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 390 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(16)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 390 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_16"	memorizedspellinfo "getBottomSpell(16)"	opacity lua "getSpellOpacity(16)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 450 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(17)"}
-	button {area 450 452 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_17"	memorizedspellinfo "bottomSpells[17]"	opacity lua "getSpellOpacity(17)"}
-	label  {area 516 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(18)"}
-	button {area 516 452 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_18"	memorizedspellinfo "bottomSpells[18]"	opacity lua "getSpellOpacity(18)"}
-	label  {area 582 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(19)"}
-	button {area 582 452 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_19"	memorizedspellinfo "bottomSpells[19]"	opacity lua "getSpellOpacity(19)"}
-	label  {area 648 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(20)"}
-	button {area 648 452 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_20"	memorizedspellinfo "bottomSpells[20]"	opacity lua "getSpellOpacity(20)"}
+	label  {area 450 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(17)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 452 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_17"	memorizedspellinfo "getBottomSpell(17)"	opacity lua "getSpellOpacity(17)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(18)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 452 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_18"	memorizedspellinfo "getBottomSpell(18)"	opacity lua "getSpellOpacity(18)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(19)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 452 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_19"	memorizedspellinfo "getBottomSpell(19)"	opacity lua "getSpellOpacity(19)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 452 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(20)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 452 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_20"	memorizedspellinfo "getBottomSpell(20)"	opacity lua "getSpellOpacity(20)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 450 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(21)"}
-	button {area 450 514 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_17"	memorizedspellinfo "bottomSpells[21]"	opacity lua "getSpellOpacity(21)"}
-	label  {area 516 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(22)"}
-	button {area 516 514 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_18"	memorizedspellinfo "bottomSpells[22]"	opacity lua "getSpellOpacity(22)"}
-	label  {area 582 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(23)"}
-	button {area 582 514 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_19"	memorizedspellinfo "bottomSpells[23]"	opacity lua "getSpellOpacity(23)"}
-	label  {area 648 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(24)"}
-	button {area 648 514 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_20"	memorizedspellinfo "bottomSpells[24]"	opacity lua "getSpellOpacity(24)"}
+	label  {area 450 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(21)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 514 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_21"	memorizedspellinfo "getBottomSpell(21)"	opacity lua "getSpellOpacity(21)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(22)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 514 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_22"	memorizedspellinfo "getBottomSpell(22)"	opacity lua "getSpellOpacity(22)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(23)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 514 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_23"	memorizedspellinfo "getBottomSpell(23)"	opacity lua "getSpellOpacity(23)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 514 54 54	bam "spelfram"	enabled "getMemorizedMageSpellSlotEnabled(24)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 514 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_24"	memorizedspellinfo "getBottomSpell(24)"	opacity lua "getSpellOpacity(24)"	actionScroll "memorizedScrollItems()"}
 
 	button
 	{
@@ -8208,14 +8286,8 @@ menu
 		sequence 0
 		action
 		"
-			if shownSpellOffset > 0 then
-				shownSpellOffset = shownSpellOffset - 1
-				Infinity_PlaySound('GAM_05')
-			elseif shownSpellOffset == 0 and currentSpellLevel > 1 then
+			if currentSpellLevel > 1 then
 				setMageBookLevel(currentSpellLevel - 1)
-				if #bookSpells > 0 then
-					shownSpellOffset = math.floor((#bookSpells-1) / numberOfKnownMageSpellSlots)
-				end
 			end
 		"
 	}
@@ -8226,10 +8298,7 @@ menu
 		sequence 1
 		action
 		"
-			if (shownSpellOffset + 1) < math.floor((((#bookSpells-1) / numberOfKnownMageSpellSlots) + 1)) then
-				shownSpellOffset = shownSpellOffset + 1
-				Infinity_PlaySound('GAM_05')
-			elseif currentSpellLevel < 9 and ((shownSpellOffset + 1) == math.floor((((#bookSpells-1) / numberOfKnownMageSpellSlots) + 1)) or #bookSpells == 0) then
+			if currentSpellLevel < maxMagePage then
 				setMageBookLevel(currentSpellLevel + 1)
 			end
 		"
@@ -9202,9 +9271,7 @@ menu
 	}
 }
 `
-numberOfKnownPriestSpellSlots = 24
 currentSpellLevel = 1
-shownSpellOffset = 0
 
 function priestPageInfo()
 	if characters[id].hasShamanBook then
@@ -9236,7 +9303,10 @@ showPriestMemorizationFlash = false
 
 function setPriestBookLevel(num)
 	currentBookSpell = 0
-	shownSpellOffset = 0
+	forceSpellScroll = true
+	forceMemorizedScroll = true
+	spellOffset = 0
+	memorizedOffset = 0
 	if currentSpellLevel ~= num then
 		Infinity_PlaySound('GAM_05')
 	end
@@ -9255,19 +9325,20 @@ function createPriestMemorizationSparkle(x,y,w,h, fromList, listIndex)
 end
 
 function unmemorizingPriestSpell(resref)
-	local index = 1
-	local sparkle = -1
-	for index = 1, #(bottomSpells), 1 do
-		if bottomSpells[index].resref == resref then
-			sparkle = index
-			if bottomSpells[index].castable == 0 then
+	local index = 0
+	for k,v in pairs(bottomSpells) do
+		if v.resref == resref then
+			index = k
+			if v.castable == 0 then
 				break
 			end
 		end
 	end
-
-	x,y,w,h = Infinity_GetArea("BUTTON_MEMORIZEDSPELL_" .. sparkle)
-	createPriestMemorizationSparkle(x, y, w, h, 'memorizedListPriest', sparkle)
+	index = index - memorizedOffset
+	if index > 0 and index < 25 then
+		local x,y,w,h = Infinity_GetArea("BUTTON_MEMORIZEDSPELL_" .. index)
+		createPriestMemorizationSparkle(x, y, w, h, 'memorizedListPriest', index)
+	end
 end
 
 function refreshPriestBook()
@@ -9287,7 +9358,13 @@ function refreshPriestBook()
 	end
 end
 
+function getBottomSpell(slot)
+	slot = slot + memorizedOffset
+	return bottomSpells[slot]
+end
+
 function getSpellOpacity(slot)
+	slot = slot + memorizedOffset
 	if slot > #bottomSpells or bottomSpells[slot].castable == 0 then
 		return 150
 	end
@@ -9295,21 +9372,20 @@ function getSpellOpacity(slot)
 end
 
 function getMemorizedPriestSpellSlotEnabled(slot)
-	local ret = true
-
 	if characters[id].hasShamanBook then
 		return false
 	end
+	slot = slot + memorizedOffset
 	if slot > characters[id].priestDetails[currentSpellLevel].maxMemorized then
 		return false
 	end
-
-	return ret
+	return true
 end
 
 function isWizSpellMode()
 	return e:GetActiveEngine() == e:GetEngineWizSpell()
- end
+end
+
 function memorizeSpell(spell)
 	local success = false
 	if(isWizSpellMode()) then
@@ -9326,15 +9402,18 @@ function memorizeSpell(spell)
 				break
 			end
 		end
-		x,y,w,h = Infinity_GetArea("BUTTON_MEMORIZEDSPELL_" .. index)
+		index = index - memorizedOffset
+		if index > 0 and index < 25 then
+			x,y,w,h = Infinity_GetArea("BUTTON_MEMORIZEDSPELL_" .. index)
 
-		if(isWizSpellMode()) then
-			createMageMemorizationSparkle(x, y, w, h, 'memorizedListMage', index)
-		else
-			createPriestMemorizationSparkle(x, y, w, h, 'memorizedListPriest', index)
+			if(isWizSpellMode()) then
+				createMageMemorizationSparkle(x, y, w, h, 'memorizedListMage', index)
+			else
+				createPriestMemorizationSparkle(x, y, w, h, 'memorizedListPriest', index)
+			end
+			showMageMemorizationFlash = true
 		end
 		Infinity_PlaySound('GAM_24')
-		showMageMemorizationFlash = true
 	end
 end
 function unmemorizeSpell(spell)
@@ -9351,9 +9430,9 @@ end
 function finishUnmemorizeSpell(spell)
 	local success = false
 	if(isWizSpellMode()) then
-		success = mageScreen:UnmemorizeSpell( spell.level, spell.memorizedIndex)
+		success = mageScreen:UnmemorizeSpell(spell.level, spell.memorizedIndex)
 	else
-		success = priestScreen:UnmemorizeSpell(spell.level,spell.memorizedIndex)
+		success = priestScreen:UnmemorizeSpell(spell.level, spell.memorizedIndex)
 	end
 	Infinity_PlaySound('GAM_44')
 end
@@ -9376,7 +9455,6 @@ menu
 	onopen
 	"
 		currentSpellLevel = 1
-		shownSpellOffset = 0
 		showPriestMemorizationFlash = false
 		pushSidebars()
 		setPriestBookLevel(1)
@@ -9500,42 +9578,59 @@ menu
 		enabled		"maxPriestPage > 6"
 		action		"setPriestBookLevel(7)"
 	}
-
 	text
 	{
 		area 138 178 256 22
 		text lua "Infinity_FetchString(11945)"
 		text style "normal_parchment"
 	}
-	button {area 138 200 54 54	sequence 0	name "BUTTON_BOOKSPELL_1"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 1]"}
-	button {area 204 200 54 54	sequence 1	name "BUTTON_BOOKSPELL_2"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 2]"}
-	button {area 270 200 54 54	sequence 2	name "BUTTON_BOOKSPELL_3"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 3]"}
-	button {area 336 200 54 54	sequence 3	name "BUTTON_BOOKSPELL_4"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 4]"}
 
-	button {area 138 262 54 54	sequence 4	name "BUTTON_BOOKSPELL_5"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 5]"}
-	button {area 204 262 54 54	sequence 5	name "BUTTON_BOOKSPELL_6"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 6]"}
-	button {area 270 262 54 54	sequence 6	name "BUTTON_BOOKSPELL_7"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 7]"}
-	button {area 336 262 54 54	sequence 7	name "BUTTON_BOOKSPELL_8"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 8]"}
+	list
+	{
+		column
+		{
+			width 100
+			label
+			{
+				area 0 0 -1 -1
+			}
+		}
+		area 154 204 266 372
+		hidehighlight
+		rowheight 62
+		table "makeBlankTable(math.ceil(#bookSpells / 4))"
+		scrollbar 'GUISCRC'
+		scrollbar func "spellScroll"
+	}
+	button {area 154 204 54 54	sequence 0	name "BUTTON_BOOKSPELL_1"	spellinfo "bookSpells[spellOffset + 1]" 	actionScroll "spellScrollItems()"}
+	button {area 218 204 54 54	sequence 1	name "BUTTON_BOOKSPELL_2"	spellinfo "bookSpells[spellOffset + 2]" 	actionScroll "spellScrollItems()"}
+	button {area 282 204 54 54	sequence 2	name "BUTTON_BOOKSPELL_3"	spellinfo "bookSpells[spellOffset + 3]" 	actionScroll "spellScrollItems()"}
+	button {area 346 204 54 54	sequence 3	name "BUTTON_BOOKSPELL_4"	spellinfo "bookSpells[spellOffset + 4]" 	actionScroll "spellScrollItems()"}
 
-	button {area 138 324 54 54	sequence 8	name "BUTTON_BOOKSPELL_9"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 9]"}
-	button {area 204 324 54 54	sequence 9	name "BUTTON_BOOKSPELL_10"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 10]"}
-	button {area 270 324 54 54	sequence 0	name "BUTTON_BOOKSPELL_11"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 11]"}
-	button {area 336 324 54 54	sequence 1	name "BUTTON_BOOKSPELL_12"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 12]"}
+	button {area 154 266 54 54	sequence 4	name "BUTTON_BOOKSPELL_5"	spellinfo "bookSpells[spellOffset + 5]" 	actionScroll "spellScrollItems()"}
+	button {area 218 266 54 54	sequence 5	name "BUTTON_BOOKSPELL_6"	spellinfo "bookSpells[spellOffset + 6]" 	actionScroll "spellScrollItems()"}
+	button {area 282 266 54 54	sequence 6	name "BUTTON_BOOKSPELL_7"	spellinfo "bookSpells[spellOffset + 7]" 	actionScroll "spellScrollItems()"}
+	button {area 346 266 54 54	sequence 7	name "BUTTON_BOOKSPELL_8"	spellinfo "bookSpells[spellOffset + 8]" 	actionScroll "spellScrollItems()"}
 
-	button {area 138 386 54 54	sequence 2	name "BUTTON_BOOKSPELL_13"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 13]"}
-	button {area 204 386 54 54	sequence 3	name "BUTTON_BOOKSPELL_14"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 14]"}
-	button {area 270 386 54 54	sequence 4	name "BUTTON_BOOKSPELL_15"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 15]"}
-	button {area 336 386 54 54	sequence 5	name "BUTTON_BOOKSPELL_16"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 16]"}
+	button {area 154 328 54 54	sequence 8	name "BUTTON_BOOKSPELL_9"	spellinfo "bookSpells[spellOffset + 9]" 	actionScroll "spellScrollItems()"}
+	button {area 218 328 54 54	sequence 9	name "BUTTON_BOOKSPELL_10"	spellinfo "bookSpells[spellOffset + 10]"	actionScroll "spellScrollItems()"}
+	button {area 282 328 54 54	sequence 0	name "BUTTON_BOOKSPELL_11"	spellinfo "bookSpells[spellOffset + 11]"	actionScroll "spellScrollItems()"}
+	button {area 346 328 54 54	sequence 1	name "BUTTON_BOOKSPELL_12"	spellinfo "bookSpells[spellOffset + 12]"	actionScroll "spellScrollItems()"}
 
-	button {area 138 448 54 54	sequence 6	name "BUTTON_BOOKSPELL_17"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 17]"}
-	button {area 204 448 54 54	sequence 7	name "BUTTON_BOOKSPELL_18"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 18]"}
-	button {area 270 448 54 54	sequence 8	name "BUTTON_BOOKSPELL_19"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 19]"}
-	button {area 336 448 54 54	sequence 9	name "BUTTON_BOOKSPELL_20"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 20]"}
+	button {area 154 390 54 54	sequence 2	name "BUTTON_BOOKSPELL_13"	spellinfo "bookSpells[spellOffset + 13]"	actionScroll "spellScrollItems()"}
+	button {area 218 390 54 54	sequence 3	name "BUTTON_BOOKSPELL_14"	spellinfo "bookSpells[spellOffset + 14]"	actionScroll "spellScrollItems()"}
+	button {area 282 390 54 54	sequence 4	name "BUTTON_BOOKSPELL_15"	spellinfo "bookSpells[spellOffset + 15]"	actionScroll "spellScrollItems()"}
+	button {area 346 390 54 54	sequence 5	name "BUTTON_BOOKSPELL_16"	spellinfo "bookSpells[spellOffset + 16]"	actionScroll "spellScrollItems()"}
 
-	button {area 138 510 54 54	sequence 4	name "BUTTON_BOOKSPELL_21"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 21]"}
-	button {area 204 510 54 54	sequence 5	name "BUTTON_BOOKSPELL_22"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 22]"}
-	button {area 270 510 54 54	sequence 6	name "BUTTON_BOOKSPELL_23"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 23]"}
-	button {area 336 510 54 54	sequence 7	name "BUTTON_BOOKSPELL_24"	spellinfo "bookSpells[shownSpellOffset * numberOfKnownPriestSpellSlots + 24]"}
+	button {area 154 452 54 54	sequence 6	name "BUTTON_BOOKSPELL_17"	spellinfo "bookSpells[spellOffset + 17]"	actionScroll "spellScrollItems()"}
+	button {area 218 452 54 54	sequence 7	name "BUTTON_BOOKSPELL_18"	spellinfo "bookSpells[spellOffset + 18]"	actionScroll "spellScrollItems()"}
+	button {area 282 452 54 54	sequence 8	name "BUTTON_BOOKSPELL_19"	spellinfo "bookSpells[spellOffset + 19]"	actionScroll "spellScrollItems()"}
+	button {area 346 452 54 54	sequence 9	name "BUTTON_BOOKSPELL_20"	spellinfo "bookSpells[spellOffset + 20]"	actionScroll "spellScrollItems()"}
+
+	button {area 154 514 54 54	sequence 4	name "BUTTON_BOOKSPELL_21"	spellinfo "bookSpells[spellOffset + 21]"	actionScroll "spellScrollItems()"}
+	button {area 218 514 54 54	sequence 5	name "BUTTON_BOOKSPELL_22"	spellinfo "bookSpells[spellOffset + 22]"	actionScroll "spellScrollItems()"}
+	button {area 282 514 54 54	sequence 6	name "BUTTON_BOOKSPELL_23"	spellinfo "bookSpells[spellOffset + 23]"	actionScroll "spellScrollItems()"}
+	button {area 346 514 54 54	sequence 7	name "BUTTON_BOOKSPELL_24"	spellinfo "bookSpells[spellOffset + 24]"	actionScroll "spellScrollItems()"}
 
 	text
 	{
@@ -9545,59 +9640,76 @@ menu
 		text align right top
 	}
 
-	label  {area 460 200 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(1)"}
-	button {area 460 200 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_1"	memorizedspellinfo "bottomSpells[1]"	opacity lua "getSpellOpacity(1)"}
-	label  {area 526 200 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(2)"}
-	button {area 526 200 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_2"	memorizedspellinfo "bottomSpells[2]"	opacity lua "getSpellOpacity(2)"}
-	label  {area 592 200 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(3)"}
-	button {area 592 200 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_3"	memorizedspellinfo "bottomSpells[3]"	opacity lua "getSpellOpacity(3)"}
-	label  {area 658 200 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(4)"}
-	button {area 658 200 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_4"	memorizedspellinfo "bottomSpells[4]"	opacity lua "getSpellOpacity(4)"}
+	list
+	{
+		column
+		{
+			width 100
+			label
+			{
+				area 0 0 -1 -1
+			}
+		}
+		area 450 204 266 372
+		hidehighlight
+		rowheight 62
+		table "makeBlankTable(math.ceil(#bottomSpellsPlaceHolder / 4))"
+		scrollbar 'GUISCRC'
+		scrollbar func "memorizedScroll"
+	}
+	label  {area 450 204 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(1)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 204 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_1"	memorizedspellinfo "getBottomSpell(1)"	opacity lua "getSpellOpacity(1)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 204 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(2)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 204 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_2"	memorizedspellinfo "getBottomSpell(2)"	opacity lua "getSpellOpacity(2)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 204 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(3)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 204 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_3"	memorizedspellinfo "getBottomSpell(3)"	opacity lua "getSpellOpacity(3)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 204 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(4)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 204 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_4"	memorizedspellinfo "getBottomSpell(4)"	opacity lua "getSpellOpacity(4)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 460 262 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(5)"}
-	button {area 460 262 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_5"	memorizedspellinfo "bottomSpells[5]"	opacity lua "getSpellOpacity(5)"}
-	label  {area 526 262 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(6)"}
-	button {area 526 262 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_6"	memorizedspellinfo "bottomSpells[6]"	opacity lua "getSpellOpacity(6)"}
-	label  {area 592 262 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(7)"}
-	button {area 592 262 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_7"	memorizedspellinfo "bottomSpells[7]"	opacity lua "getSpellOpacity(7)"}
-	label  {area 658 262 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(8)"}
-	button {area 658 262 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_8"	memorizedspellinfo "bottomSpells[8]"	opacity lua "getSpellOpacity(8)"}
+	label  {area 450 266 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(5)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 266 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_5"	memorizedspellinfo "getBottomSpell(5)"	opacity lua "getSpellOpacity(5)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 266 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(6)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 266 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_6"	memorizedspellinfo "getBottomSpell(6)"	opacity lua "getSpellOpacity(6)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 266 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(7)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 266 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_7"	memorizedspellinfo "getBottomSpell(7)"	opacity lua "getSpellOpacity(7)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 266 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(8)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 266 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_8"	memorizedspellinfo "getBottomSpell(8)"	opacity lua "getSpellOpacity(8)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 460 324 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(9)"}
-	button {area 460 324 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_9"	memorizedspellinfo "bottomSpells[9]"	opacity lua "getSpellOpacity(9)"}
-	label  {area 526 324 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(10)"}
-	button {area 526 324 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_10"	memorizedspellinfo "bottomSpells[10]"	opacity lua "getSpellOpacity(10)"}
-	label  {area 592 324 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(11)"}
-	button {area 592 324 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_11"	memorizedspellinfo "bottomSpells[11]"	opacity lua "getSpellOpacity(11)"}
-	label  {area 658 324 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(12)"}
-	button {area 658 324 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_12"	memorizedspellinfo "bottomSpells[12]"	opacity lua "getSpellOpacity(12)"}
+	label  {area 450 328 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(9)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 328 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_9"	memorizedspellinfo "getBottomSpell(9)"	opacity lua "getSpellOpacity(9)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 328 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(10)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 328 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_10"	memorizedspellinfo "getBottomSpell(10)"	opacity lua "getSpellOpacity(10)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 328 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(11)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 328 54 54	sequence 0	name "BUTTON_MEMORIZEDSPELL_11"	memorizedspellinfo "getBottomSpell(11)"	opacity lua "getSpellOpacity(11)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 328 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(12)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 328 54 54	sequence 1	name "BUTTON_MEMORIZEDSPELL_12"	memorizedspellinfo "getBottomSpell(12)"	opacity lua "getSpellOpacity(12)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 460 386 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(13)"}
-	button {area 460 386 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_13"	memorizedspellinfo "bottomSpells[13]"	opacity lua "getSpellOpacity(13)"}
-	label  {area 526 386 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(14)"}
-	button {area 526 386 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_14"	memorizedspellinfo "bottomSpells[14]"	opacity lua "getSpellOpacity(14)"}
-	label  {area 592 386 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(15)"}
-	button {area 592 386 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_15"	memorizedspellinfo "bottomSpells[15]"	opacity lua "getSpellOpacity(15)"}
-	label  {area 658 386 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(16)"}
-	button {area 658 386 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_16"	memorizedspellinfo "bottomSpells[16]"	opacity lua "getSpellOpacity(16)"}
+	label  {area 450 390 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(13)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 390 54 54	sequence 2	name "BUTTON_MEMORIZEDSPELL_13"	memorizedspellinfo "getBottomSpell(13)"	opacity lua "getSpellOpacity(13)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 390 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(14)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 390 54 54	sequence 3	name "BUTTON_MEMORIZEDSPELL_14"	memorizedspellinfo "getBottomSpell(14)"	opacity lua "getSpellOpacity(14)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 390 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(15)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 390 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_15"	memorizedspellinfo "getBottomSpell(15)"	opacity lua "getSpellOpacity(15)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 390 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(16)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 390 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_16"	memorizedspellinfo "getBottomSpell(16)"	opacity lua "getSpellOpacity(16)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 460 448 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(17)"}
-	button {area 460 448 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_17"	memorizedspellinfo "bottomSpells[17]"	opacity lua "getSpellOpacity(17)"}
-	label  {area 526 448 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(18)"}
-	button {area 526 448 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_18"	memorizedspellinfo "bottomSpells[18]"	opacity lua "getSpellOpacity(18)"}
-	label  {area 592 448 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(19)"}
-	button {area 592 448 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_19"	memorizedspellinfo "bottomSpells[19]"	opacity lua "getSpellOpacity(19)"}
-	label  {area 658 448 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(20)"}
-	button {area 658 448 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_20"	memorizedspellinfo "bottomSpells[20]"	opacity lua "getSpellOpacity(20)"}
+	label  {area 450 452 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(17)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 452 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_17"	memorizedspellinfo "getBottomSpell(17)"	opacity lua "getSpellOpacity(17)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 452 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(18)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 452 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_18"	memorizedspellinfo "getBottomSpell(18)"	opacity lua "getSpellOpacity(18)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 452 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(19)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 452 54 54	sequence 8	name "BUTTON_MEMORIZEDSPELL_19"	memorizedspellinfo "getBottomSpell(19)"	opacity lua "getSpellOpacity(19)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 452 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(20)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 452 54 54	sequence 9	name "BUTTON_MEMORIZEDSPELL_20"	memorizedspellinfo "getBottomSpell(20)"	opacity lua "getSpellOpacity(20)"	actionScroll "memorizedScrollItems()"}
 
-	label  {area 460 510 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(21)"}
-	button {area 460 510 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_17"	memorizedspellinfo "bottomSpells[21]"	opacity lua "getSpellOpacity(21)"}
-	label  {area 526 510 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(22)"}
-	button {area 526 510 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_18"	memorizedspellinfo "bottomSpells[22]"	opacity lua "getSpellOpacity(22)"}
-	label  {area 592 510 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(23)"}
-	button {area 592 510 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_19"	memorizedspellinfo "bottomSpells[23]"	opacity lua "getSpellOpacity(23)"}
-	label  {area 658 510 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(24)"}
-	button {area 658 510 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_20"	memorizedspellinfo "bottomSpells[24]"	opacity lua "getSpellOpacity(24)"}
+	label  {area 450 514 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(21)"	actionScroll "memorizedScrollItems()"}
+	button {area 450 514 54 54	sequence 4	name "BUTTON_MEMORIZEDSPELL_21"	memorizedspellinfo "getBottomSpell(21)"	opacity lua "getSpellOpacity(21)"	actionScroll "memorizedScrollItems()"}
+	label  {area 514 514 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(22)"	actionScroll "memorizedScrollItems()"}
+	button {area 514 514 54 54	sequence 5	name "BUTTON_MEMORIZEDSPELL_22"	memorizedspellinfo "getBottomSpell(22)"	opacity lua "getSpellOpacity(22)"	actionScroll "memorizedScrollItems()"}
+	label  {area 578 514 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(23)"	actionScroll "memorizedScrollItems()"}
+	button {area 578 514 54 54	sequence 6	name "BUTTON_MEMORIZEDSPELL_23"	memorizedspellinfo "getBottomSpell(23)"	opacity lua "getSpellOpacity(23)"	actionScroll "memorizedScrollItems()"}
+	label  {area 642 514 54 54	bam "spelfram"	enabled "getMemorizedPriestSpellSlotEnabled(24)"	actionScroll "memorizedScrollItems()"}
+	button {area 642 514 54 54	sequence 7	name "BUTTON_MEMORIZEDSPELL_24"	memorizedspellinfo "getBottomSpell(24)"	opacity lua "getSpellOpacity(24)"	actionScroll "memorizedScrollItems()"}
 
 	label
 	{
@@ -9613,14 +9725,8 @@ menu
 		sequence 0
 		action
 		"
-			if shownSpellOffset > 0 then
-				shownSpellOffset = shownSpellOffset - 1
-				Infinity_PlaySound('GAM_05')
-			elseif shownSpellOffset == 0 and currentSpellLevel > 1 then
+			if currentSpellLevel > 1 then
 				setPriestBookLevel(currentSpellLevel - 1)
-				if #bookSpells > 0 then
-					shownSpellOffset = math.floor((#bookSpells-1) / numberOfKnownPriestSpellSlots)
-				end
 			end
 		"
 	}
@@ -9631,10 +9737,7 @@ menu
 		sequence 1
 		action
 		"
-			if (shownSpellOffset + 1) < math.floor((((#bookSpells-1) / numberOfKnownPriestSpellSlots) + 1)) then
-				shownSpellOffset = shownSpellOffset + 1
-				Infinity_PlaySound('GAM_05')
-			elseif currentSpellLevel < 7 and ((shownSpellOffset + 1) == math.floor((((#bookSpells-1) / numberOfKnownPriestSpellSlots) + 1)) or #bookSpells == 0) then
+			if currentSpellLevel < 7 then
 				setPriestBookLevel(currentSpellLevel + 1)
 			end
 		"
@@ -14110,21 +14213,6 @@ function dragMessagesY(newY)
 	setQuickLootOffset()
 	chatboxScrollToBottom = 1
 end
-function setMessagesY(newY)
-	local x,y,w,hOld = Infinity_GetArea('messagesRect')
-	h = hOld - newY
-	if h < 64 then
-		newY = hOld - 64
-	elseif h > 500 then
-		newY = hOld - 500
-	end
-
-	adjustItemGroup({"messagesHandleY"},0,newY,0,0)
-	adjustItemGroup({"messagesRect","worldMessageBox"},0,newY,0,-newY)
-
-	chatboxScrollToBottom = 1
-	worldMessageBoxTop = y + newY
-end
 `
 menu
 {
@@ -14877,25 +14965,14 @@ menu
 				pad 54 0 0 0
 				text lua "getPortrait(rowNumber)"
 				text style 'label'
-				-- glow lua "rowNumber == mouseoverRow"
 				glow lua "rowNumber == selPortrait"
 			}
-			-- label
-			-- {
-				-- enabled "selPortrait ~= rowNumber"
-				-- area 0 0 378 94
-				-- rectangle 1
-				-- rectangle opacity 150
-			-- }
 			label
 			{
 				area 0 0 57 90
 				bitmap lua "portraitTable[rowNumber]"
-				-- glow lua "rowNumber == mouseoverRow"
 			}
 		}
-		actionEnter	""
-		actionExit	"mouseoverRow = 0"
 		rowheight 94
 		hidehighlight
 		area 440 120 378 470
@@ -22884,7 +22961,7 @@ menu
 			incrChapter(1)
 		"
 	}
-	list
+	list --quest
 	{
 		column
 		{

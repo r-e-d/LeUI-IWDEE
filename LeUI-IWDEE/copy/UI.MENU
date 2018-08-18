@@ -18667,6 +18667,16 @@ menu
 		text align center center
 		maxlines	1
 		maxchars	32
+		action
+		"
+			if(key_pressed == 92) then
+				return -1
+			elseif letter_pressed == '\\' then
+				return -1
+			else
+				return 1
+			end
+		"
 	}
 
 	label -- filter options
@@ -18879,16 +18889,19 @@ function connectionSetDefaultGameSettings()
 
 	if connectionPlayerNameEdit == "" then
 		connectionPlayerNameEdit = Infinity_GetINIString('Multiplayer', 'Player Name', player)
+		connectionPlayerNameEdit = connectionPlayerNameEdit:gsub("\\", "")
 		Infinity_SetINIValue('Multiplayer', 'Player Name', connectionPlayerNameEdit)
 	end
 
 	if connectionSessionPasswordEdit == "" then
 		connectionSessionPasswordEdit = Infinity_GetINIString('Multiplayer', 'Session Password', pass)
+		connectionSessionPasswordEdit = connectionSessionPasswordEdit:gsub("\\", "")
 		Infinity_SetINIValue('Multiplayer', 'Session Password', connectionSessionPasswordEdit)
 	end
 
 	if connectionSessionNameEdit == "" then
 		connectionSessionNameEdit = Infinity_GetINIString('Multiplayer', 'Session Name', game)
+		connectionSessionNameEdit = connectionSessionNameEdit:gsub("\\", "")
 		Infinity_SetINIValue('Multiplayer', 'Session Name', connectionSessionNameEdit)
 	end
 
@@ -18948,7 +18961,16 @@ menu
 		text 		style "edit"
 		maxlines	1
 		maxchars 	32
-
+		action
+		"
+			if(key_pressed == 92) then
+				return -1
+			elseif letter_pressed == '\\' then
+				return -1
+			else
+				return 1
+			end
+		"
 	}
 
 	label -- session
@@ -18969,8 +18991,17 @@ menu
 		var			connectionSessionNameEdit
 		text 		style	"edit"
 		maxlines	1
+		action
+		"
+			if(key_pressed == 92) then
+				return -1
+			elseif letter_pressed == '\\' then
+				return -1
+			else
+				return 1
+			end
+		"
 	}
-
 
 	text -- password option
 	{
@@ -19035,6 +19066,16 @@ menu
 		maxlines	1
 		enabled 	connectionPasswordProtected
 		fill        112 111 111 64
+		action
+		"
+			if(key_pressed == 92) then
+				return -1
+			elseif letter_pressed == '\\' then
+				return -1
+			else
+				return 1
+			end
+		"
 	}
 	button
 	{

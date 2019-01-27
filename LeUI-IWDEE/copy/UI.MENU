@@ -1822,8 +1822,9 @@ menu
 	ignoreEsc
 	onOpen
 	"
-		currentPanelID = const.EXPORT_ID;
-		Infinity_FocusTextEdit('characterExportCharacterEditArea');
+		currentPanelID = const.EXPORT_ID
+		characterExportCharacterEdit = characters[currentID].name
+		Infinity_FocusTextEdit('characterExportCharacterEditArea')
 	"
 	label
 	{
@@ -6774,7 +6775,7 @@ menu
 	label
 	{
 		area 0 0 809 300
-		mosaic 'GUWBTP30'
+		mosaic GUWBTP30
 	}
 	list
 	{
@@ -6855,7 +6856,7 @@ menu
 	{
 		area		400 238 200 44
 		bam			GUIBUTNT
-		text			"GIVE_XP_LABEL"
+		text		"GIVE_XP_LABEL"
 		text style	"button"
 		action		"C:SetCurrentXP(cheatXpAmt)"
 	}
@@ -6884,7 +6885,7 @@ menu
 	label
 	{
 		area 0 0 809 300
-		mosaic 'GUWBTP30'
+		mosaic GUWBTP30
 	}
 	list
 	{
@@ -9419,7 +9420,7 @@ end
 function unmemorizeSpell(spell)
 	if(spell.isPlaceholder) then return end
 	showMageMemorizationFlash = false
-	if(spell.castableCount >= spell.memorizedCount) then
+	if(spell.castableCount >= spell.memorizedCount and Infinity_GetOption(41, 9) == 1) then
 		--Unmemorizing a castable spell.
 		popup2Button(11824, 'REMOVE_BUTTON', function() finishUnmemorizeSpell(spell) end)
 	else
@@ -10133,7 +10134,6 @@ menu
 		if colorChoice == nil then
 			colorChoice = Infinity_FindUIItemByName('BUTTON_mapNoteColor_' .. mapScreen:GetColorChoice())
 		end
-		Infinity_ClickScreen()
 	"
 	onClose
 	"
@@ -10145,12 +10145,16 @@ menu
 		area 0 0 657 234
 		mosaic GUIERR6
 	}
+	label
+	{
+		area 34 26 588 54
+		fill 112 111 111 64
+	}
 	edit
 	{
 		name 		"mapNoteEditArea"
-		area		40 32 576 34
+		area		40 32 576 44
 		var			mapNoteEdit
-		maxlines 	1
 		scrollbar	'GUISCRC'
 		text style	"edit"
 	}
@@ -11231,13 +11235,24 @@ menu
 		clickable lua "storeScreen:IsIdentifyItemButtonClickable()"
 		action
 		"
+			local keys = {}
+			for k,v in pairs(store.identifyItems) do
+				if v.highlight == 1 then
+					table.insert(keys, k)
+				end
+			end
 			storeScreen:OnIdentifyItemButtonClick()
+			for k,v in pairs(keys) do
+				local item = store.identifyItems[v].item
+				local str = '^0xFF000080' .. item.name .. '^-\n' .. item.description
+				identifyText = trim(identifyText .. '\n\n' .. str)
+			end
 		"
 	}
 	text
 	{
 		area 461 150 365 412
-		text lua "store.identifyText"
+		text lua "identifyText"
 		text style "normal_parchment"
 		scrollbar 'GUISCRC'
 	}
@@ -11834,6 +11849,7 @@ menu
 	align center center
 	onOpen
 	"
+		identifyText = ''
 		local menuName = storeScreen:GetMenuName(storeCurMenuId)
 		Infinity_PushMenu(menuName)
 		pushSidebars()
@@ -16792,7 +16808,7 @@ menu
 		area 151 705 230 44
 		bam GUIBUTMT
 		sequenceonce lua "getRandomButtonSequence('GUIBUTMT')"
-		text "ABILITIES_BUTTON"
+		text "HIGH_LEVEL_ABILITIES_BUTTON"
 		text style "button"
 		action
 		"
@@ -17576,13 +17592,9 @@ menu
 	ignoreesc
 	onOpen
 	"
-		charNameEdit = ''
 		Infinity_PlaySound('GAM_03')
-		if chargen.name then
-			charNameEdit = chargen.name
-		end
+		charNameEdit = chargen.name or ''
 		Infinity_FocusTextEdit('charNameEditArea')
-		Infinity_ClickScreen()
 	"
 	onClose
 	"
@@ -17613,6 +17625,14 @@ menu
 		text style	"edit"
 		maxlines	1
 		maxchars	20
+		action
+		"
+			--if key_pressed is return
+			if (key_pressed == 13) then
+				return 0
+			end
+			return 1
+		"
 	}
 	button
 	{
@@ -23862,7 +23882,7 @@ menu
 	label
 	{
 		area 0 0 1024 768
-		mosaic 'GUICGPR'
+		mosaic GUICGPR
 	}
 	label
 	{
@@ -23917,7 +23937,7 @@ menu
 	button
 	{
 		bitmap lua 'getPregenCharacterPortrait(1)'
-		area 48 328 58 86
+		area 49 329 54 84
 		align center center
 		ignoreEvents
 	}
@@ -23955,7 +23975,7 @@ menu
 	button
 	{
 		bitmap lua 'getPregenCharacterPortrait(2)'
-		area 48 474 58 86
+		area 49 476 54 84
 		align center center
 		ignoreEvents
 	}
@@ -23993,7 +24013,7 @@ menu
 	button
 	{
 		bitmap lua 'getPregenCharacterPortrait(3)'
-		area 48 624 58 86
+		area 49 626 54 84
 		align center center
 		ignoreEvents
 	}

@@ -7385,6 +7385,16 @@ end
 `
 menu
 {
+	name 'BACKGROUND'
+	align center center
+	label
+	{
+		area 0 0 2550 1800
+		mosaic BCKGRND
+	}
+}
+menu
+{
 	name 'START'
 	align center center
 	ignoreesc
@@ -7404,7 +7414,7 @@ menu
 		elseif state == 0 then
 			Infinity_PushMenu('START_MAIN')
 		end
-		-- Infinity_SetBackground('BACKGROUND')
+		Infinity_SetBackground('BACKGROUND')
 		Infinity_SetHighlightColors(0x14, 0x6b, 0x66, 0xcc, 0x14, 0x6b, 0x66, 0x88, 0x14, 0x6b, 0x66, 0x00)
 	"
 	onClose
@@ -10505,7 +10515,14 @@ menu
 	name 'CHAPTER'
 	align center center
 	ignoreEsc
-
+	onOpen
+	"
+		Infinity_SetBackground('BACKGROUND')
+	"
+	onClose
+	"
+		Infinity_SetBackground(nil)
+	"
 	label
 	{
 		area 0 0 1024 768
@@ -10567,7 +10584,10 @@ menu
 	name 'EPILOGUE'
 	align center center
 	ignoreEsc
-
+	onOpen
+	"
+		Infinity_SetBackground('BACKGROUND')
+	"
 	label
 	{
 		area 0 0 1024 768
@@ -14299,53 +14319,48 @@ menu
 	}
 }
 `
+step = 1
 worldNPCDialogText = ""
 worldPlayerDialogChoices = {}
-savedText = ""
-initialTop = nil
-previousTop = 0
-dialogRows = 0
 
 function dialogEntryGreyed()
 	return not worldScreen:GetInControlOfDialog()
 end
+
 function getDialogPaddingText()
 	local x,y,w,h = Infinity_GetArea("worldPlayerDialogChoicesList")
-	w = w - 18 --account for scrollbar influence on width
-	local dialogHeight = 0
 	local zoom = tonumber(Infinity_GetINIValue('Fonts','Zoom','100'))
-	dialogHeight = Infinity_GetContentHeight(styles.normal.font, w, trim(worldNPCDialogText), styles.normal.point * zoom / 100, 1, styles.normal.useFontZoom) + 12
-	w = w - 12 --account for padding of player responses
-	local i = 3
-	while i <= dialogRows do
-		dialogHeight = dialogHeight + Infinity_GetContentHeight(styles.normal.font, w, worldPlayerDialogChoices[i - 2].text, styles.normal.point * zoom / 100, 1, styles.normal.useFontZoom)
+	local dialogHeight = Infinity_GetContentHeight(styles.normal.font, w, trim(worldNPCDialogText), styles.normal.point * zoom / 100, 0, styles.normal.useFontZoom) + 12
+	local i = 1
+	while i <= #worldPlayerDialogChoices do
+		dialogHeight = dialogHeight + Infinity_GetContentHeight(styles.normal.font, w, worldPlayerDialogChoices[i].text, styles.normal.point * zoom / 100, 0, styles.normal.useFontZoom)
 		i = i + 1
 	end
 	local text = ""
-	i = Infinity_GetContentHeight(styles.onepixel.font, w, text, styles.onepixel.point, 1, styles.onepixel.useFontZoom)
-	local lineHeight = i
-	while i + dialogHeight + lineHeight - 1 <= h do
-		text = text .. "\n "
-		i = Infinity_GetContentHeight(styles.onepixel.font, w, text, styles.onepixel.point, 1, styles.onepixel.useFontZoom)
+	local lineHeight = Infinity_GetContentHeight(styles.normal.font, w, text, styles.normal.point * zoom / 100, 0, styles.normal.useFontZoom)
+	while dialogHeight + lineHeight < h do
+		text = text .. "\n"
+		lineHeight = Infinity_GetContentHeight(styles.normal.font, w, text, styles.normal.point * zoom / 100, 0, styles.normal.useFontZoom)
 	end
 	return text
 end
+
 function resizeDialog()
-	savedText = ""
+	buildResponsesList()
+	step = 1
 end
+
 function dialogScroll(top, height, contentHeight)
-	if top ~= previousTop then
-		initialTop = nil
+	if worldNPCDialogText == '' then
+		return nil
 	end
-	if savedText ~= worldNPCDialogText then
-		savedText = worldNPCDialogText
-		initialTop = nil
-		if computeDialogText() ~= '' then
-			initialTop = -Infinity_GetListHeight('dummyMessageBox')
-		end
-		previousTop = initialTop
+	
+	if step == 1 then
+		step = 2
+		return -contentHeight
 	end
-	return initialTop
+
+	return nil
 end
 
 function dragDialogMessagesY(newY)
@@ -14362,7 +14377,6 @@ function dragDialogMessagesY(newY)
 end
 
 function getDialogEntryText(row)
-	if (row == 1 or row == 2) then return end
 	local text = worldPlayerDialogChoices[row - 2].text
 	if (row == worldPlayerDialogSelection) then
 		--Color the text white when selected
@@ -14370,23 +14384,20 @@ function getDialogEntryText(row)
 	end
 	return text
 end
-function mergeDialog(t)
-	local dialog = {}
-	for key, value in pairs(t) do
-		dialog[key] = value
+
+function getDialogText()
+	local text = '\n' .. worldNPCDialogText:gsub('\n', ': ', 1)
+	if worldMessageBoxText:sub(-text:len()) == text then
+		return worldMessageBoxText:sub(1, worldMessageBoxText:len() - text:len())
 	end
-	table.insert(dialog, 1, '')
-	table.insert(dialog, 1, '')
-	dialogRows = #dialog
-	table.insert(dialog, '')
-	return dialog
+	return worldMessageBoxText
 end
-function computeDialogText()
-	local npcDialog = trim(worldNPCDialogText)
-	if worldMessageBoxText:len() > npcDialog:len() then
-		return worldMessageBoxText:sub(1, worldMessageBoxText:len() - npcDialog:len() - 1)
+
+function makeDialogTable()
+	if step == 1 then
+		return makeBlankTable(1)
 	end
-	return ''
+	return makeBlankTable(#worldPlayerDialogChoices + 3)
 end
 `
 menu
@@ -14403,9 +14414,6 @@ menu
 			Infinity_PushMenu('WORLD_DIALOG_RIGHT')
 		end
 		greySidebars()
-		savedText = ''
-		initialTop = nil
-		previousTop = 0
 	"
 	onClose
 	"
@@ -14463,35 +14471,16 @@ menu
 			width 100
 			text
 			{
+				enabled "rowNumber == 1"
+				opacity lua "step == 1 and 0 or 255"
 				area 0 0 -1 -1
-				text lua "computeDialogText()"
-				text style "normal"
-			}
-		}
-		name "dummyMessageBox"
-		area 80 20 722 180
-		enabled "0"
-		rowheight dynamic
-		hideHighlight
-		table "{0}"
-		scrollbar	'GUISCRC'
-	}
-	list
-	{
-		column
-		{
-			width 100
-			text
-			{
-				area 0 0 -1 -1
-				enabled "rowNumber == 1 and computeDialogText() ~= '' and savedText ~= ''"
-				text lua "computeDialogText()"
+				text lua "getDialogText()"
 				text style "normal"
 			}
 			text
 			{
+				enabled "rowNumber == 2"
 				area 0 0 -1 -1
-				enabled "rowNumber == 2 and savedText ~= ''"
 				pad 0 0 0 12
 				text lua "trim(worldNPCDialogText)"
 				text style "normal"
@@ -14499,30 +14488,30 @@ menu
 			label
 			{
 				area 0 0 -1 -1
-				enabled "rowNumber > 2 and rowNumber <= dialogRows and dialogEntryGreyed() and savedText ~= ''"
+				enabled "rowNumber > 2 and rowNumber < #worldPlayerDialogChoices + 3 and dialogEntryGreyed()"
 				rectangle 1
 				rectangle opacity 100
 			}
 			text
 			{
+				enabled "rowNumber > 2 and rowNumber < #worldPlayerDialogChoices + 3"
 				area 0 0 -1 -1
-				enabled "rowNumber > 2 and rowNumber <= dialogRows and savedText ~= ''"
 				text lua "getDialogEntryText(rowNumber)"
 				text style "normal"
 			}
 			text
 			{
+				enabled "rowNumber == #worldPlayerDialogChoices + 3"
 				area 0 0 -1 -1
-				enabled "rowNumber > dialogRows"
 				text lua "getDialogPaddingText()"
-				text style "onepixel"
+				text style "normal"
 			}
 		}
 		name "worldPlayerDialogChoicesList"
 		area 80 20 740 180
 		rowheight dynamic
 		hideHighlight
-		table "mergeDialog(worldPlayerDialogChoices)"
+		table "makeDialogTable()"
 		var "worldPlayerDialogSelection"
 		scrollbar	'GUISCRC'
 		scrollbar func "dialogScroll"
@@ -19696,17 +19685,6 @@ menu
 			Infinity_PopMenu('CONNECTION_WAITING_FOR_SERVER')
 			connectionScreen:CancelJoinGame();
 		"
-	}
-}
-
-menu
-{
-	name 'BACKGROUND'
-	align center center
-	label
-	{
-		area 0 0 3840 2160 
-		mosaic 'GUIBG'
 	}
 }
 `

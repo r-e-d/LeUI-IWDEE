@@ -28,13 +28,3 @@ styles['list']['useFontZoom'] = 1
 
 styles['title']['font'] = 'SHERWOOD'
 styles['title']['point'] = 30
-
-styles['onepixel'] =
-{
-	color = 'B',
-	font = 'POSTANTI',
-	point = 1,
-	useFontZoom = 0,
-	valign = 'top',
-	halign = 'left',
-}

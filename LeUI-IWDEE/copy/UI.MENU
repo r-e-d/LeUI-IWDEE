@@ -8391,9 +8391,19 @@ function filterContingencyMageSpells()
 	end
 	return out
 end
+function getIconName(spell)
+	local icon = spell.icon
+	local iconB = icon:sub(1, -2) .. 'B'
+	for _, entry in ipairs(Infinity_GetFilesOfType("BAM")) do
+		if entry[1] == iconB then
+			return iconB
+		end
+	end
+	return icon
+end
 function getContingencySpellIcon(slotNumber)
 	if slotNumber <= #bookSpells then
-		return bookSpells[slotNumber].icon:sub(1, -2) .. 'B'
+		return getIconName(bookSpells[slotNumber])
 	end
 	return ""
 end
@@ -8433,7 +8443,7 @@ function swapContingencySpellType()
 end
 function getContingencySetSpellIcon(slotNumber)
 	if sequencerSpells ~= nil and slotNumber <= #sequencerSpells then
-		return sequencerSpells[slotNumber].icon:sub(1, -2) .. 'B'
+		return getIconName(sequencerSpells[slotNumber])
 	end
 	return ""
 end
@@ -9023,7 +9033,7 @@ menu
 	label
 	{
 		area 95 70 52 52
-		icon lua "currentSpell.icon:sub(1, -2) .. 'B'"
+		icon lua "getIconName(currentSpell)"
 	}
 	label
 	{

@@ -18238,14 +18238,21 @@ menu
 	label
 	{
 		area 82 12 700 40
-		text "HIGH_LEVEL_ABILITIES_TITLE"
+		text "LEVEL_UP_TITLE"
 		text style "title"
 	}
 	label
 	{
-		area 46 116 336 48
+		area 46 120 286 44
+		text "HIGH_LEVEL_ABILITIES_TITLE"
+		text style "label"
+		text align center center
+	}
+	label
+	{
+		area 332 120 50 44
 		text lua "chargen.numHLAs"
-		text style "normal"
+		text style "label"
 		text align center center
 	}
 	text
@@ -18325,27 +18332,16 @@ menu
 	button
 	{
 		on enter
-		bam GUIBUTMT
-		area 210 653 234 44
+		bam GUIBUTWT
+		area 308 653 300 44
 		text style "button"
 		text "DONE_BUTTON"
 		clickable lua "createCharScreen:IsDoneButtonClickable()"
 		action
 		"
 			createCharScreen:OnDoneButtonClick()
-		"
-	}
-	button
-	{
-		on escape
-		bam GUIBUTMT
-		area 464 653 234 44
-		text style "button"
-		text "CANCEL_BUTTON"
-		action
-		"
 			Infinity_PopMenu()
-			createCharScreen:OnCancelButtonClick()
+			createCharScreen:OnDoneButtonClick()
 		"
 	}
 }

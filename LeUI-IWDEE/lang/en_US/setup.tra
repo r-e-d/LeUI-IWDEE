@@ -1,8 +1,4 @@
 //component names
 @10000 = ~lefreut's Enhanced UI - Core component~
-@10001 = ~lefreut's Enhanced UI - Show Sidebar toggle button~
-@10002 = ~lefreut's Enhanced UI - Show Quicksave button~
-@10003 = ~lefreut's Enhanced UI - Show Help button~
-@10004 = ~lefreut's Enhanced UI - Show Highlight button~
 //messages during installation
 @90000 = ~This mod requires BG1:EE, SoD, BG2:EE or EET~

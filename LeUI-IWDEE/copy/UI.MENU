@@ -8,12 +8,6 @@ end
 listMetaInfo = {}
 combatLog = {}
 
-showSidebarToggle = false
-showQuickSaveButton = false
-showHelpButton = false
-showHighlightButton = false
-clickToLevelUp = false
-
 lastRandomButtonSequence = -1
 function getRandomButtonSequence(buttonImage)
 	local ret = 0
@@ -2748,7 +2742,66 @@ graphicsToggles = {
 {'SHOW_HEALTHBAR_LABEL',40856, 65, 0, 0, 0},
 {'SHOW_BLACK_SPACE_LABEL','SHOW_BLACK_SPACE_DESCRIPTION', 69, 0, 0, 0},
 {'NEAREST_NEIGHBOUR_LABEL','NEAREST_NEIGHBOUR_DESCRIPTION', 70, 0, 0, 0},
+{'LEUI_SIDEBAR_TOGGLE_LABEL','LEUI_SIDEBAR_TOGGLE_DESCRIPTION', 100, 0, 0, 0},
+{'LEUI_QUICKSAVE_LABEL','LEUI_QUICKSAVE_DESCRIPTION', 101, 0, 0, 0},
+{'LEUI_HIGHLIGHT_LABEL','LEUI_HIGHLIGHT_DESCRIPTION', 102, 0, 0, 0},
+{'LEUI_HELP_LABEL','LEUI_HELP_DESCRIPTION', 103, 0, 0, 0},
+{'LEUI_CLICK_TO_LEVEL_UP_LABEL','LEUI_CLICK_TO_LEVEL_UP_DESCRIPTION', 104, 0, 0, 0},
+{'LEUI_ITEM_COMPARISION_LABEL','LEUI_ITEM_COMPARISION_DESCRIPTION', 105, 0, 0, 0},
+{'LEUI_JOURNAL_COLLAPSED_LABEL','LEUI_JOURNAL_COLLAPSED_DESCRIPTION', 108, 0, 0, 0},
 }
+
+LeUI_uiStrings = {
+  LEUI_SIDEBAR_TOGGLE_LABEL = "Sidebar Toggle Buttons",
+  LEUI_SIDEBAR_TOGGLE_DESCRIPTION = "Enable this option to show Toggle Buttons on left and right sidebars",
+  LEUI_QUICKSAVE_LABEL = "Show Quicksave Button",
+  LEUI_QUICKSAVE_DESCRIPTION = "Enable this option to show Quick Save button on left sidebar",
+  LEUI_HIGHLIGHT_LABEL = "Show Highlight Button",
+  LEUI_HIGHLIGHT_DESCRIPTION = "Enable this option to show Reveal Details button on right sidebar",
+  LEUI_HELP_LABEL = "Show Help Button",
+  LEUI_HELP_DESCRIPTION = "Enable this option to show Help button on left sidebar",
+  LEUI_CLICK_TO_LEVEL_UP_LABEL = "Left Click to Level Up",
+  LEUI_CLICK_TO_LEVEL_UP_DESCRIPTION = "Enable this option for level up your character by clicking on portrait",
+  LEUI_ITEM_COMPARISION_LABEL = "Item Comparision",
+  LEUI_ITEM_COMPARISION_DESCRIPTION = "Enable this option for enable item comparision in inventory",
+  LEUI_JOURNAL_COLLAPSED_LABEL = "Journal Collapsed",
+  LEUI_JOURNAL_COLLAPSED_DESCRIPTION = "Enable this option for journal be collapsed by default",
+}
+
+if options['LeUI'] == nil then
+	options['LeUI'] = {}
+end
+
+function LeUIquestDisplay(index)
+	if journalCollapsed then
+		return questDisplay[index].expanded
+	else
+		return not questDisplay[index].hidden
+	end
+end
+
+function LeUIGetOption(item, value)
+	if options['LeUI'][item] ~= nil then
+		return options['LeUI'][item] == '1' and true or false
+	else
+		options['LeUI'][item] = value and '1' or '0'
+		return value
+	end
+end
+
+showSidebarToggle = LeUIGetOption(LeUI_uiStrings.LEUI_SIDEBAR_TOGGLE_LABEL, true)
+showQuickSaveButton = LeUIGetOption(LeUI_uiStrings.LEUI_QUICKSAVE_LABEL, true)
+showHighlightButton = LeUIGetOption(LeUI_uiStrings.LEUI_HIGHLIGHT_LABEL, true)
+showHelpButton = LeUIGetOption(LeUI_uiStrings.LEUI_HELP_LABEL, true)
+clickToLevelUp = LeUIGetOption(LeUI_uiStrings.LEUI_CLICK_TO_LEVEL_UP_LABEL, false)
+itemComparison = LeUIGetOption(LeUI_uiStrings.LEUI_ITEM_COMPARISION_LABEL, true)
+journalCollapsed = LeUIGetOption(LeUI_uiStrings.LEUI_JOURNAL_COLLAPSED_LABEL, false)
+
+function appendNewOptions()
+	for n, v in pairs(LeUI_uiStrings) do
+		uiStrings[n] = v
+	end
+end
 
 addedDirectx = false
 function appendDirectXOption()
@@ -2776,6 +2829,7 @@ menu
 		if e:HasDirectX() then
 			appendDirectXOption()
 		end
+		appendNewOptions()
 		panelID = 6
 		helpString = 18038
 		selectedGraphicOpt = 0
@@ -2784,7 +2838,23 @@ menu
 		fontSizeCancel = Infinity_GetOption(22, panelID)
 
 		for index, var in pairs(graphicsToggles) do
-			var[5] = Infinity_GetOption(var[3], panelID)
+			if var[3] == 100 then
+				var[5] = showSidebarToggle and 1 or 0
+			elseif var[3] == 101 then
+				var[5] = showQuickSaveButton and 1 or 0
+			elseif var[3] == 102 then
+				var[5] = showHighlightButton and 1 or 0
+			elseif var[3] == 103 then
+				var[5] = showHelpButton and 1 or 0
+			elseif var[3] == 104 then
+				var[5] = clickToLevelUp and 1 or 0
+			elseif var[3] == 105 then
+				var[5] = itemComparison and 1 or 0
+			elseif var[3] == 108 then
+				var[5] = journalCollapsed and 1 or 0
+			else
+				var[5] = Infinity_GetOption(var[3], panelID)
+			end
 			var[6] = 0
 			if var[5] == 0 then
 				var[4] = 0
@@ -2940,8 +3010,31 @@ menu
 			Infinity_ChangeOption(22, fontSizeSLDR, panelID)
 
 			for index, var in pairs(graphicsToggles) do
-				if (var[6] == 1 ) then
-					Infinity_ChangeOption(var[3], var[5], panelID)
+				if var[6] == 1 then
+					if var[3] == 100 then
+						showSidebarToggle = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_SIDEBAR_TOGGLE_LABEL] = var[5] == 1 and '1' or '0'
+					elseif var[3] == 101 then
+						showQuickSaveButton = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_QUICKSAVE_LABEL] = var[5] == 1 and '1' or '0'
+					elseif var[3] == 102 then
+						showHighlightButton = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_HIGHLIGHT_LABEL] = var[5] == 1 and '1' or '0'
+					elseif var[3] == 103 then
+						showHelpButton = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_HELP_LABEL] = var[5] == 1 and '1' or '0'
+					elseif var[3] == 104 then
+						clickToLevelUp = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_CLICK_TO_LEVEL_UP_LABEL] = var[5] == 1 and '1' or '0'
+					elseif var[3] == 105 then
+						itemComparison = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_ITEM_COMPARISION_LABEL] = var[5] == 1 and '1' or '0'
+					elseif var[3] == 108 then
+						journalCollapsed = var[5] == 1 and true or false
+						options['LeUI'][LeUI_uiStrings.LEUI_JOURNAL_COLLAPSED_LABEL] = var[5] == 1 and '1' or '0'
+					else
+						Infinity_ChangeOption(var[3], var[5], panelID)
+					end
 				end
 			end
 
@@ -5911,7 +6004,6 @@ menu
 `
 TEXT_inventoryError = ""
 inventoryStats = {}
-itemComparison = true
 
 function resetStatsDisplay()
 	tempStats = {}
@@ -14416,6 +14508,9 @@ function getDialogText(row)
 			elseif c2 == 10 and worldNPCDialogText:byte(idx2 - 1) == c1 then
 				idx2 = idx2 - 1
 				c2 = worldNPCDialogText:byte(idx2)
+			elseif c2 == 10 and worldNPCDialogText:byte(idx2 - 1) == 10 and worldNPCDialogText:byte(idx2 - 2) == c1 then
+				idx2 = idx2 - 2
+				c2 = worldNPCDialogText:byte(idx2)
 			elseif c1 == 32 and c2 == 10 and worldMessageBoxText:byte(idx1 - 1) == 58 then
 				idx1 = idx1 - 1
 				c1 = 10
@@ -22819,7 +22914,7 @@ function entryEnabled(row)
 		ret = false
 	elseif not objectiveEnabled(rowTab.parent) then
 		ret = false
-	elseif not questDisplay[questDisplay[rowTab.parent].parent].expanded then
+	elseif not LeUIquestDisplay(questDisplay[rowTab.parent].parent) then
 		ret = false
 	elseif journalMode == const.JOURNAL_MODE_DONEQUESTS and rowTab.stateType ~= const.ENTRY_TYPE_COMPLETE then
 		ret = false
@@ -22846,7 +22941,7 @@ function objectiveEnabled(row)
 		ret = false
 	elseif not questEnabled(rowTab.parent) then
 		ret = false
-	elseif not questDisplay[rowTab.parent].expanded then
+	elseif not LeUIquestDisplay(rowTab.parent) then
 		ret = false
 	elseif journalMode == const.JOURNAL_MODE_DONEQUESTS and rowTab.stateType ~= const.ENTRY_TYPE_COMPLETE then
 		ret = false
@@ -22890,7 +22985,7 @@ end
 function getArrowFrame(row)
 	if(questDisplay[row] == nil or (questDisplay[row].objective == nil and questDisplay[row].quest == nil)) then return "" end
 
-	if(questDisplay[row].expanded) then
+	if(LeUIquestDisplay(row)) then
 		return '-'
 	else
 		return '+'
@@ -23003,9 +23098,6 @@ menu
 	"
 		buildQuestDisplay()
 		chapter = math.max(0, Infinity_GetMaxChapterPage())
-		if questDisplay and questDisplay[1] then
-			questDisplay[1].expanded = true
-		end
 		pushSidebars()
 	"
 	onClose "popSidebars()"
@@ -23143,10 +23235,20 @@ menu
 		area		144 188 574 378
 		action
 		"
-			if(questDisplay[selectedQuest].expanded) then
-				questDisplay[selectedQuest].expanded = nil
-			else
-				questDisplay[selectedQuest].expanded = 1
+			if questDisplay[selectedQuest].quest then
+				if journalCollapsed then
+					if(questDisplay[selectedQuest].expanded) then
+						questDisplay[selectedQuest].expanded = nil
+					else
+						questDisplay[selectedQuest].expanded = 1
+					end
+				else
+					if(questDisplay[selectedQuest].hidden) then
+						questDisplay[selectedQuest].hidden = nil
+					else
+						questDisplay[selectedQuest].hidden = 1
+					end
+				end
 			end
 		"
 	}

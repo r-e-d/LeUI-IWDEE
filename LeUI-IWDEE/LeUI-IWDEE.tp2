@@ -1,6 +1,6 @@
 BACKUP ~LeUI-IWDEE/backup~
 AUTHOR ~lefreut~
-VERSION ~1.8.1~
+VERSION ~1.9~
 
 ALWAYS
 	INCLUDE ~LeUI-IWDEE/lib/CopyPVRZ.tph~

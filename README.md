@@ -4,7 +4,7 @@ The goal of this mod is to provide an improved UI for Icewind Dale Enhanced Edit
 
 ## Compatibility
 
-For EE version 2.6, use the v1.9 version of this mod.
+For EE version 2.6, use the v1.9.1 version of this mod.
 
 For EE version 2.5, use the v1.8.1 version of this mod.
 

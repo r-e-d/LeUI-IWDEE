@@ -1943,9 +1943,9 @@ function compareCustomSound(s1, s2)
 	elseif (s2.sound == "DEFAULT" and s1.sound ~= "DEFAULT") then
 		return false
 	elseif (string.sub(s1.sound, 1, 4) == "BDTP" and string.sub(s2.sound, 1, 4) ~= "BDTP") then
-		return false
+		return false;
 	elseif (string.sub(s2.sound, 1, 4) == "BDTP" and string.sub(s1.sound, 1, 4) ~= "BDTP") then
-		return true
+		return true;
 	end
 	return s1.sound < s2.sound
 end
@@ -5307,7 +5307,7 @@ menu
 	modal
 	onOpen
 	"
-		-- Infinity_PlaySound('GAM_03')
+		Infinity_PlaySound('GAM_03')
 	"
 	onClose
 	"
@@ -5389,7 +5389,6 @@ menu
 		area		326 638 230 44
 		text "DONE_BUTTON"
 		text style "button"
-		sound ""
 		action
 		"
 			Infinity_PopMenu()
@@ -9212,7 +9211,6 @@ menu
 		bam GUIBUTMT
 		text		"DONE_BUTTON"
 		text style "button"
-		sound ""
 		action		"Infinity_PopMenu('SPELL_DESCRIPTION')"
 	}
 	button
@@ -9232,7 +9230,6 @@ menu
 		text		"DONE_BUTTON"
 		text style "button"
 		bam GUIBUTWT
-		sound ""
 		action		"Infinity_PopMenu('SPELL_DESCRIPTION')"
 	}
 }
@@ -9448,7 +9445,6 @@ menu
 		sequenceonce lua "getRandomButtonSequence('GUIBUTMT')"
 		text "DONE_BUTTON"
 		text style "button"
-		sound ""
 		action
 		"
 			Infinity_PopMenu('POPUP_DETAILS')
@@ -14682,14 +14678,14 @@ menu
 			{
 				enabled "rowNumber == 1"
 				opacity lua "step == 1 and 0 or 255"
-				area 0 0 740 -1
+				area 0 0 724 -1
 				text lua "getDialogText(1)"
 				text style "normal"
 			}
 			text
 			{
 				enabled "rowNumber == 2"
-				area 0 0 740 -1
+				area 0 0 724 -1
 				pad 0 0 0 12
 				text lua "getDialogText(2)"
 				text style "normal"

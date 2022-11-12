@@ -14718,7 +14718,7 @@ menu
 	{
 		name "worldPlayerDialogFake"
 		enabled "step == 1"
-		area 138 20 678 210
+		area 138 20 678 310
 		text lua "getDialogText(2)"
 		text style "normal"
 	}
